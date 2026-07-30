@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-gab-dark: #0f1f3a;
+  --color-gab-darker: #091326;
+  --color-gab-gold: #CBA153;
+  --color-gab-gold-light: #E5C67C;
+}
+
 body {
   margin: 0;
   padding: 0;

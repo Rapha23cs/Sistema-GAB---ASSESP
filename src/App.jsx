@@ -60,25 +60,24 @@ export default function App() {
   }, [isDark]);
 
   if (!isAuthenticated) {
-    if (showAuthFlow) {
-      return (
-        <ErrorBoundary>
-          <LoginView 
-            onLogin={() => setIsAuthenticated(true)} 
-            onBack={() => setShowAuthFlow(false)}
-            initialMode={initialAuthMode}
-          />
-        </ErrorBoundary>
-      );
-    }
     return (
       <ErrorBoundary>
-        <LandingView 
-          isDark={isDark}
-          setIsDark={setIsDark}
-          onOpenLogin={() => { setInitialAuthMode('login'); setShowAuthFlow(true); }}
-          onOpenRegister={() => { setInitialAuthMode('register'); setShowAuthFlow(true); }}
-        />
+        <div className="relative">
+          <LandingView 
+            isDark={isDark}
+            setIsDark={setIsDark}
+            onOpenLogin={() => { setInitialAuthMode('login'); setShowAuthFlow(true); }}
+            onOpenRegister={() => { setInitialAuthMode('register'); setShowAuthFlow(true); }}
+          />
+          {showAuthFlow && (
+            <LoginView 
+              onLogin={() => setIsAuthenticated(true)} 
+              onBack={() => setShowAuthFlow(false)}
+              initialMode={initialAuthMode}
+              isDark={isDark}
+            />
+          )}
+        </div>
       </ErrorBoundary>
     );
   }
@@ -88,16 +87,23 @@ export default function App() {
       <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-sans overflow-hidden selection:bg-blue-500/30 transition-colors duration-500">
 
         {/* Sidebar */}
-        <aside className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-colors duration-500 z-20 shadow-sm">
+        <aside className="w-72 bg-white dark:bg-gab-darker border-r border-slate-200 dark:border-white/5 flex flex-col transition-colors duration-500 z-20 shadow-sm">
           <div className="p-6 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-800 dark:from-blue-600 dark:to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/20 text-white">
-              <Icons.Briefcase />
+            <div className="w-10 h-10 text-gab-gold flex items-center justify-center shrink-0">
+              <Icons.GabLogo className="w-10 h-10 drop-shadow-sm" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-500 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">Sistema Gab</span>
+            <div className="flex flex-col justify-center">
+              <span className="text-lg font-serif font-bold tracking-widest leading-none mb-1 text-gab-dark dark:text-white">
+                GAB — ASSESP
+              </span>
+              <span className="text-[9px] font-bold tracking-[0.15em] leading-none text-gab-gold">
+                SETOR JURÍDICO | PPMA
+              </span>
+            </div>
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {['Dashboard', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Colaboração', 'Configurações'].map((item) => {
+            {['Dashboard', 'Colaboração', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Configurações'].map((item) => {
               const isActive = activeTab === item;
               let IconComponent;
               switch (item) {
@@ -116,8 +122,8 @@ export default function App() {
                   key={item}
                   onClick={() => setActiveTab(item)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 font-semibold shadow-sm border border-blue-100 dark:border-blue-800/50'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-blue-50 dark:bg-gab-gold/10 text-blue-800 dark:text-gab-gold font-semibold shadow-sm border border-blue-100 dark:border-gab-gold/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gab-dark hover:text-slate-800 dark:hover:text-slate-200'
                     } cursor-pointer`}
                 >
                   <IconComponent />
