@@ -78,9 +78,9 @@ export const DUMMY_ORDERS = [
 ];
 
 export const DUMMY_EQUIPMENTS = [
-  { id: 'EQ-001', type: 'Esteira Raio - X', unit: 'Unidade Prisional Central', serial: 'SN-XR-88902', model: 'Rapiscan 620XR', contract: 'com_contrato', currentOS: '65/2026', status: 'operante' },
-  { id: 'EQ-002', type: 'Bodyscann', unit: 'Unidade Prisional Norte', serial: 'SN-BS-11203', model: 'Conpass Smart', contract: 'garantia', currentOS: null, status: 'operante' },
-  { id: 'EQ-003', type: 'Pórtico', unit: 'Unidade Prisional Central', serial: 'SN-PT-55611', model: 'Garrett PD 6500i', contract: 'sem_contrato', currentOS: '67/2026', status: 'inoperante' },
+  { id: 'EQ-001', type: 'Esteira Raio - X', unit: 'Unidade Prisional Central', serial: 'SN-XR-88902', model: 'Rapiscan 620XR', contract: 'com_contrato', currentOS: '65/2026', status: 'operante', contrato_vinculado: 'CT-012/2026', informacoes_pendencias: 'Troca de disco rígido agendada. Aguardando peça.', sei: '1234.001234.00001' },
+  { id: 'EQ-002', type: 'Bodyscann', unit: 'Unidade Prisional Norte', serial: 'SN-BS-11203', model: 'Conpass Smart', contract: 'garantia', currentOS: null, status: 'operante', contrato_vinculado: 'Garantia de Fábrica', informacoes_pendencias: 'Nenhuma pendência técnica.', sei: '1234.005678.00002' },
+  { id: 'EQ-003', type: 'Pórtico', unit: 'Unidade Prisional Central', serial: 'SN-PT-55611', model: 'Garrett PD 6500i', contract: 'sem_contrato', currentOS: '67/2026', status: 'inoperante', contrato_vinculado: 'Sem contrato ativo (Processo Licitação em andamento)', informacoes_pendencias: 'Equipamento inoperante por queima de placa-mãe.', sei: '1234.009101.00003' },
 ];
 
 export const DUMMY_CONTRACTS = [
