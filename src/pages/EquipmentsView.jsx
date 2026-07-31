@@ -1,11 +1,33 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/Icons';
 import { ContractBadge, EqStatusBadge } from '../components/Badges';
-import { DUMMY_EQUIPMENTS } from '../data/mockData';
+import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
 
 export const EquipmentsView = () => {
   const [filterType, setFilterType] = useState('Todos');
   const [expandedRow, setExpandedRow] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEqData, setNewEqData] = useState({
+    contrato: '',
+    tipo: 'Esteira Raio - X',
+    numero_serie: '',
+    modelo: '',
+    cobertura_contrato: 'com_contrato',
+    os_atual: '',
+    sei: '',
+    status: 'operante',
+    data_garantia: ''
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewEqData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveEquipment = () => {
+    alert('Equipamento adicionado com sucesso! (Simulação)');
+    setIsModalOpen(false);
+  };
 
   const toggleRow = (id) => setExpandedRow(expandedRow === id ? null : id);
 
@@ -36,18 +58,23 @@ export const EquipmentsView = () => {
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Icons.Monitor /> Inventário de Equipamentos
           </h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Filtrar:</span>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gab-gold/50 cursor-pointer transition-colors"
-            >
-              <option value="Todos">Todos</option>
-              <option value="Esteira Raio - X">Esteira Raio-X</option>
-              <option value="Bodyscann">Bodyscan</option>
-              <option value="Pórtico">Pórtico</option>
-            </select>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Filtrar:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gab-gold/50 cursor-pointer transition-colors"
+              >
+                <option value="Todos">Todos</option>
+                <option value="Esteira Raio - X">Esteira Raio-X</option>
+                <option value="Bodyscann">Bodyscan</option>
+                <option value="Pórtico">Pórtico</option>
+              </select>
+            </div>
+            <button onClick={() => setIsModalOpen(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm flex items-center gap-2 cursor-pointer whitespace-nowrap">
+              <Icons.Plus /> Novo Equipamento
+            </button>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -138,6 +165,113 @@ export const EquipmentsView = () => {
           </table>
         </div>
       </div>
+
+      {/* Modal Novo Equipamento */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Icons.Plus /> Cadastrar Novo Equipamento
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer">
+                <Icons.X />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Tipo de Equipamento */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo de Equipamento</label>
+                  <select name="tipo" value={newEqData.tipo} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                    <option value="Esteira Raio - X">Esteira Raio - X</option>
+                    <option value="Bodyscann">Bodyscan</option>
+                    <option value="Pórtico">Pórtico</option>
+                  </select>
+                </div>
+
+                {/* Modelo */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Modelo</label>
+                  <input name="modelo" value={newEqData.modelo} onChange={handleInputChange} type="text" placeholder="Ex: Rapiscan 620XR" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                </div>
+
+                {/* Número de Série */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Número de Série</label>
+                  <input name="numero_serie" value={newEqData.numero_serie} onChange={handleInputChange} type="text" placeholder="Ex: SN-XR-88902" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                </div>
+
+                {/* Processo SEI */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Processo SEI</label>
+                  <input name="sei" value={newEqData.sei} onChange={handleInputChange} type="text" placeholder="Ex: 0000.000000.00000" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 font-mono" />
+                </div>
+
+                {/* Contrato Vinculado */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Contrato Vinculado</label>
+                  <select name="contrato" value={newEqData.contrato} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                    <option value="">Selecione um contrato...</option>
+                    {DUMMY_CONTRACTS.map(c => (
+                      <option key={c.id} value={c.id}>{c.id}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Cobertura de Contrato */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Cobertura de Contrato</label>
+                  <select name="cobertura_contrato" value={newEqData.cobertura_contrato} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                    <option value="com_contrato">Com Contrato</option>
+                    <option value="sem_contrato">Sem Contrato</option>
+                    <option value="garantia">Na Garantia</option>
+                  </select>
+                </div>
+
+                {/* Ordem de Serviço Atual */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Ordem de Serviço Atual (Opcional)</label>
+                  <select name="os_atual" value={newEqData.os_atual} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                    <option value="">Selecione uma OS...</option>
+                    {DUMMY_ORDERS.map(os => (
+                      <option key={os.id} value={os.numero_os}>{os.numero_os} - {os.status}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Status de Funcionamento */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status Operacional</label>
+                  <select name="status" value={newEqData.status} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                    <option value="operante">Operante</option>
+                    <option value="inoperante">Inoperante</option>
+                    <option value="em_manutencao">Em Manutenção</option>
+                  </select>
+                </div>
+
+                {/* Data de Garantia */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Data de Garantia</label>
+                  <input name="data_garantia" value={newEqData.data_garantia} onChange={handleInputChange} type="date" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                </div>
+
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 bg-white dark:bg-slate-900">
+              <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium transition-colors cursor-pointer">
+                Cancelar
+              </button>
+              <button onClick={handleSaveEquipment} className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
+                <Icons.CheckSquare /> Salvar Equipamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

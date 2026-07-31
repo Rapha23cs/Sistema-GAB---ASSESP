@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { TypeBadge, StatusBadge } from '../components/Badges';
-import { DUMMY_ORDERS } from '../data/mockData';
+import { DUMMY_ORDERS, DUMMY_CONTRACTS } from '../data/mockData';
 import { NovaOSView } from './NovaOSView';
 
 export const OrdersView = () => {
@@ -9,6 +9,11 @@ export const OrdersView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
   const [isCreatingOS, setIsCreatingOS] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+
+  // Filtros
+  const [filterType, setFilterType] = useState('Todos');
+  const [filterStatus, setFilterStatus] = useState('Todos');
+  const [filterContract, setFilterContract] = useState('Todos');
   
   useEffect(() => {
     setOrders(DUMMY_ORDERS);
@@ -56,6 +61,13 @@ export const OrdersView = () => {
     return <NovaOSView onCancel={() => setIsCreatingOS(false)} onSave={handleSaveOS} />;
   }
 
+  const filteredOrders = orders.filter(order => {
+    const matchType = filterType === 'Todos' || order.tipo_servico === filterType;
+    const matchStatus = filterStatus === 'Todos' || order.status === filterStatus;
+    const matchContract = filterContract === 'Todos' || order.contrato === filterContract;
+    return matchType && matchStatus && matchContract;
+  });
+
   return (
     <div className="space-y-8">
       {/* Metrics */}
@@ -74,16 +86,50 @@ export const OrdersView = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden transition-colors duration-500">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 transition-colors duration-500">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 transition-colors duration-500">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Icons.Briefcase /> Ordens Recentes
           </h2>
-          <button 
-            onClick={() => setIsCreatingOS(true)}
-            className="px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer flex items-center gap-2"
-          >
-            <Icons.Plus /> Nova OS
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 hidden lg:block">Filtrar:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer transition-colors"
+              >
+                <option value="Todos">Tipo (Todos)</option>
+                <option value="Preventiva">Preventiva</option>
+                <option value="Corretiva">Corretiva</option>
+                <option value="Vistoria">Vistoria</option>
+              </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer transition-colors"
+              >
+                <option value="Todos">Status (Todos)</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Concluída">Concluída</option>
+              </select>
+              <select
+                value={filterContract}
+                onChange={(e) => setFilterContract(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer transition-colors"
+              >
+                <option value="Todos">Contrato (Todos)</option>
+                {DUMMY_CONTRACTS.map(c => (
+                  <option key={c.id} value={c.id}>{c.id}</option>
+                ))}
+              </select>
+            </div>
+            <button 
+              onClick={() => setIsCreatingOS(true)}
+              className="px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer flex items-center gap-2 whitespace-nowrap w-full sm:w-auto justify-center"
+            >
+              <Icons.Plus /> Nova OS
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -97,9 +143,10 @@ export const OrdersView = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-sm transition-colors duration-500">
-              {orders.map((order) => {
-                const isExpanded = expandedRow === order.id;
-                return (
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => {
+                  const isExpanded = expandedRow === order.id;
+                  return (
                   <React.Fragment key={order.id}>
                     <tr onClick={() => toggleRow(order.id)} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors duration-200">
                       <td className="px-6 py-4 text-slate-400 dark:text-slate-500">{isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}</td>
@@ -233,7 +280,13 @@ export const OrdersView = () => {
                     )}
                   </React.Fragment>
                 );
-              })}
+              })) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                    Nenhuma ordem de serviço encontrada para esses filtros.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

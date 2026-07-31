@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/Icons';
+import { DUMMY_CONTRACTS, DUMMY_EQUIPMENTS } from '../data/mockData';
 
 export const NovaOSView = ({ onCancel, onSave }) => {
   const [formData, setFormData] = useState({
@@ -15,11 +16,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
   });
 
   const [equipamentos, setEquipamentos] = useState([]);
-  const [novoEquipamento, setNovoEquipamento] = useState({
-    nome: '',
-    modelo: '',
-    numero_serie: ''
-  });
+  const [selectedEquipamentoId, setSelectedEquipamentoId] = useState('');
 
   const [tarefas, setTarefas] = useState([]);
   const [tarefaId, setTarefaId] = useState('');
@@ -39,9 +36,24 @@ export const NovaOSView = ({ onCancel, onSave }) => {
 
   const handleAddEquipamento = (e) => {
     e.preventDefault();
-    if (!novoEquipamento.nome.trim()) return;
-    setEquipamentos(prev => [...prev, { ...novoEquipamento, id: Date.now().toString() }]);
-    setNovoEquipamento({ nome: '', modelo: '', numero_serie: '' });
+    if (!selectedEquipamentoId) return;
+
+    if (equipamentos.some(eq => eq.id === selectedEquipamentoId)) {
+      alert("Este equipamento já foi adicionado.");
+      return;
+    }
+
+    const eqFound = DUMMY_EQUIPMENTS.find(eq => eq.id === selectedEquipamentoId);
+    if (eqFound) {
+      setEquipamentos(prev => [...prev, {
+        id: eqFound.id,
+        nome: eqFound.type,
+        modelo: eqFound.model,
+        numero_serie: eqFound.serial,
+        unidade: eqFound.unit
+      }]);
+    }
+    setSelectedEquipamentoId('');
   };
 
   const handleRemoveEquipamento = (id) => {
@@ -124,7 +136,14 @@ export const NovaOSView = ({ onCancel, onSave }) => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Contrato</label>
-              <input name="contrato" value={formData.contrato} onChange={handleChange} type="text" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200" placeholder="Ex: CT-012/2026" />
+              <select name="contrato" value={formData.contrato} onChange={handleChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200 cursor-pointer">
+                <option value="">Selecione um contrato...</option>
+                {DUMMY_CONTRACTS.map(contract => (
+                  <option key={contract.id} value={contract.id}>
+                    {contract.id}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Processo</label>
@@ -161,40 +180,29 @@ export const NovaOSView = ({ onCancel, onSave }) => {
             )}
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="col-span-1 md:col-span-2 space-y-1">
-              <input
-                value={novoEquipamento.nome}
-                onChange={e => setNovoEquipamento(prev => ({ ...prev, nome: e.target.value }))}
-                type="text" placeholder="Nome do Equipamento"
-                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-slate-200"
-              />
-            </div>
-            <div className="space-y-1">
-              <input
-                value={novoEquipamento.modelo}
-                onChange={e => setNovoEquipamento(prev => ({ ...prev, modelo: e.target.value }))}
-                type="text" placeholder="Modelo"
-                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-slate-200"
-              />
-            </div>
-            <div className="space-y-1">
-              <input
-                value={novoEquipamento.numero_serie}
-                onChange={e => setNovoEquipamento(prev => ({ ...prev, numero_serie: e.target.value }))}
-                type="text" placeholder="Nº de Série"
-                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-slate-200"
-              />
-            </div>
-            <div className="col-span-1 md:col-span-4 flex justify-end">
-              <button
-                type="button"
-                onClick={handleAddEquipamento}
-                className="px-6 py-2 bg-slate-800 dark:bg-slate-700 text-white font-medium text-sm rounded-xl hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors flex items-center gap-2 cursor-pointer shadow-sm w-fit"
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1 space-y-1 w-full">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Vincular Equipamento Cadastrado</label>
+              <select
+                value={selectedEquipamentoId}
+                onChange={e => setSelectedEquipamentoId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-slate-200 cursor-pointer"
               >
-                <Icons.Plus /> Adicionar Equipamento
-              </button>
+                <option value="">Selecione um equipamento...</option>
+                {DUMMY_EQUIPMENTS.map(eq => (
+                  <option key={eq.id} value={eq.id}>
+                    {eq.type} - S/N: {eq.serial} ({eq.unit})
+                  </option>
+                ))}
+              </select>
             </div>
+            <button
+              type="button"
+              onClick={handleAddEquipamento}
+              className="px-6 py-2.5 bg-slate-800 dark:bg-slate-700 text-white font-medium text-sm rounded-xl hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors flex items-center gap-2 cursor-pointer shadow-sm w-full md:w-auto justify-center whitespace-nowrap"
+            >
+              <Icons.Plus /> Adicionar Equipamento
+            </button>
           </div>
         </div>
 
@@ -280,11 +288,13 @@ export const NovaOSView = ({ onCancel, onSave }) => {
               <select
                 value={tarefaEquipamento}
                 onChange={e => setTarefaEquipamento(e.target.value)}
-                className="w-full md:w-48 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200"
+                className="w-full md:w-48 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200 cursor-pointer flex-1"
               >
                 <option value="">Equipamento (Opcional)</option>
-                {equipamentos.map(eq => (
-                  <option key={eq.id} value={eq.nome}>{eq.nome}</option>
+                {DUMMY_EQUIPMENTS.map(eq => (
+                  <option key={eq.id} value={eq.type}>
+                    {eq.type} - S/N: {eq.serial}
+                  </option>
                 ))}
               </select>
               <input
