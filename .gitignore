@@ -4,3 +4,11 @@ build/
 .env
 .DS_Store
 *.log
+
+# SQLite Database
+*.db
+*.sqlite
+*.sqlite3
+*-wal
+*-shm
+dados_empresa.db
