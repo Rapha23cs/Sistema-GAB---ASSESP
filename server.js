@@ -1,9 +1,13 @@
 import express from 'express';
 import cors from 'cors';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { OAuth2Client } from 'google-auth-library';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,94 +18,169 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Configuração do SQLite
-const dbPath = path.join(__dirname, 'dados_empresa.db');
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+// Google Sheets Config
+const CREDENTIALS_PATH = path.join(__dirname, 'client_secret_302242102864-jddtdmn5hif9a3sr1d8hir5n3rmvn02l.apps.googleusercontent.com.json');
+const TOKEN_PATH = path.join(__dirname, 'token.json');
 
-// Criar tabela de exemplo se não existir
-db.exec(`
-  CREATE TABLE IF NOT EXISTS registros (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    titulo TEXT NOT NULL,
-    descricao TEXT,
-    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+async function getDoc() {
+  if (!process.env.SPREADSHEET_ID || process.env.SPREADSHEET_ID === 'O_SEU_ID_DA_PLANILHA_AQUI') {
+    throw new Error('SPREADSHEET_ID não configurado corretamente no .env');
+  }
 
-// Rotas CRUD
-app.get('/api/registros', (req, res) => {
+  const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+  const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+  
+  const {client_secret, client_id} = credentials.web || credentials.installed;
+  const oAuth2Client = new OAuth2Client(client_id, client_secret);
+  oAuth2Client.setCredentials(token);
+
+  const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, oAuth2Client);
+  await doc.loadInfo(); 
+  return doc;
+}
+
+// Rotas de Contratos
+app.get('/api/contratos', async (req, res) => {
   try {
-    const registros = db.prepare('SELECT * FROM registros ORDER BY id DESC').all();
-    res.json(registros);
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Contratos - PPMA'];
+    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
+    
+    await sheet.loadHeaderRow(5);
+
+    const rows = await sheet.getRows();
+    const contratos = rows
+      .filter(row => row.get('CONTRATO') || row.get('OBJETO') || row.get('RESPONSÁVEL')) // Ignora linhas vazias
+      .map((row) => ({
+      id: row.rowNumber, // Usamos o número da linha como ID único para editar/deletar
+      numero_contrato: row.get('CONTRATO'),
+      vigencia: row.get('VIGÊNCIA'),
+      processo: row.get('PROCESSO "mãe" (SEI ou físico)'),
+      tipo: row.get('TIPO (OS/OF)'),
+      recurso_financeiro: row.get('RECURSO FINANCEIRO'),
+      valor_global: row.get('VALOR GLOBAL (atualizado)'),
+      valor_mensal: row.get('VALOR MENSAL'),
+      objeto: row.get('OBJETO'),
+      quantidade: row.get('QUANTIDADE'),
+      execucao: row.get('EXECUÇÃO'),
+      pendencia: row.get('PENDÊNCIA (saldo)'),
+      prazo_entrega: row.get('PRAZO DE ENTREGA (previsão)'),
+      status_licitacao: row.get('STATUS do Proc. Licitatório'),
+      localizacao: row.get('LOCALIZAÇÃO'),
+      consulta: row.get('CONSULTA'),
+      responsavel: row.get('RESPONSÁVEL')
+    }));
+    
+    // Inverte a ordem para os mais recentes (últimas linhas da planilha) aparecerem primeiro
+    res.json(contratos.reverse());
   } catch (error) {
+    console.error('Erro GET Contratos:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/registros', (req, res) => {
-  const { titulo, descricao } = req.body;
-  if (!titulo) return res.status(400).json({ error: 'Título é obrigatório' });
+app.post('/api/contratos', async (req, res) => {
+  const data = req.body;
   
   try {
-    const stmt = db.prepare('INSERT INTO registros (titulo, descricao) VALUES (?, ?)');
-    const info = stmt.run(titulo, descricao);
-    const novoRegistro = db.prepare('SELECT * FROM registros WHERE id = ?').get(info.lastInsertRowid);
-    res.status(201).json(novoRegistro);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    const doc = await getDoc();
+    let sheet = doc.sheetsByTitle['Contratos - PPMA'];
+    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
 
-app.put('/api/registros/:id', (req, res) => {
-  const { titulo, descricao } = req.body;
-  const { id } = req.params;
-  
-  try {
-    const stmt = db.prepare('UPDATE registros SET titulo = ?, descricao = ? WHERE id = ?');
-    const info = stmt.run(titulo, descricao, id);
-    if (info.changes === 0) return res.status(404).json({ error: 'Registro não encontrado' });
-    const atualizado = db.prepare('SELECT * FROM registros WHERE id = ?').get(id);
-    res.json(atualizado);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    await sheet.loadHeaderRow(5);
 
-app.delete('/api/registros/:id', (req, res) => {
-  const { id } = req.params;
-  try {
-    const stmt = db.prepare('DELETE FROM registros WHERE id = ?');
-    const info = stmt.run(id);
-    if (info.changes === 0) return res.status(404).json({ error: 'Registro não encontrado' });
-    res.json({ message: 'Registro deletado com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Rota de Backup (.db)
-app.get('/api/admin/backup', async (req, res) => {
-  try {
-    const backupFileName = \`backup_dados_\${Date.now()}.db\`;
-    const backupPath = path.join(__dirname, backupFileName);
-    
-    await db.backup(backupPath);
-    
-    res.download(backupPath, backupFileName, (err) => {
-      if (err) {
-        console.error('Erro ao fazer download do backup:', err);
-      }
-      // Deletar o arquivo temporário após o download
-      fs.unlink(backupPath, (unlinkErr) => {
-        if(unlinkErr) console.error('Erro ao deletar arquivo de backup temporário:', unlinkErr);
-      });
+    const newRow = await sheet.addRow({
+      'CONTRATO': data.numero_contrato || '',
+      'VIGÊNCIA': data.vigencia || '',
+      'PROCESSO "mãe" (SEI ou físico)': data.processo || '',
+      'TIPO (OS/OF)': data.tipo || '',
+      'RECURSO FINANCEIRO': data.recurso_financeiro || '',
+      'VALOR GLOBAL (atualizado)': data.valor_global || '',
+      'VALOR MENSAL': data.valor_mensal || '',
+      'OBJETO': data.objeto || '',
+      'QUANTIDADE': data.quantidade || '',
+      'EXECUÇÃO': data.execucao || '',
+      'PENDÊNCIA (saldo)': data.pendencia || '',
+      'PRAZO DE ENTREGA (previsão)': data.prazo_entrega || '',
+      'STATUS do Proc. Licitatório': data.status_licitacao || '',
+      'LOCALIZAÇÃO': data.localizacao || '',
+      'CONSULTA': data.consulta || '',
+      'RESPONSÁVEL': data.responsavel || ''
     });
+
+    const contrato = { ...data, id: newRow.rowNumber };
+    res.status(201).json(contrato);
   } catch (error) {
+    console.error('Erro POST Contratos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/contratos/:id', async (req, res) => {
+  const { id } = req.params; // número da linha
+  const data = req.body;
+  
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Contratos - PPMA'];
+    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
+
+    await sheet.loadHeaderRow(5);
+    const rows = await sheet.getRows();
+    const rowToUpdate = rows.find(r => r.rowNumber === parseInt(id));
+    
+    if (!rowToUpdate) return res.status(404).json({ error: 'Contrato não encontrado na planilha' });
+
+    rowToUpdate.assign({
+      'CONTRATO': data.numero_contrato || '',
+      'VIGÊNCIA': data.vigencia || '',
+      'PROCESSO "mãe" (SEI ou físico)': data.processo || '',
+      'TIPO (OS/OF)': data.tipo || '',
+      'RECURSO FINANCEIRO': data.recurso_financeiro || '',
+      'VALOR GLOBAL (atualizado)': data.valor_global || '',
+      'VALOR MENSAL': data.valor_mensal || '',
+      'OBJETO': data.objeto || '',
+      'QUANTIDADE': data.quantidade || '',
+      'EXECUÇÃO': data.execucao || '',
+      'PENDÊNCIA (saldo)': data.pendencia || '',
+      'PRAZO DE ENTREGA (previsão)': data.prazo_entrega || '',
+      'STATUS do Proc. Licitatório': data.status_licitacao || '',
+      'LOCALIZAÇÃO': data.localizacao || '',
+      'CONSULTA': data.consulta || '',
+      'RESPONSÁVEL': data.responsavel || ''
+    });
+
+    await rowToUpdate.save();
+
+    res.json({ ...data, id: rowToUpdate.rowNumber });
+  } catch (error) {
+    console.error('Erro PUT Contratos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/contratos/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Contratos - PPMA'];
+    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
+
+    await sheet.loadHeaderRow(5);
+    const rows = await sheet.getRows();
+    const rowToDelete = rows.find(r => r.rowNumber === parseInt(id));
+    
+    if (!rowToDelete) return res.status(404).json({ error: 'Contrato não encontrado na planilha' });
+
+    await rowToDelete.delete();
+    res.json({ message: 'Contrato deletado com sucesso do Google Sheets' });
+  } catch (error) {
+    console.error('Erro DELETE Contratos:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(\`Servidor rodando na porta \${PORT}\`);
+  console.log(`🚀 Servidor rodando na porta ${PORT} conectado ao Google Sheets!`);
 });

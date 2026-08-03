@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { DUMMY_CONTRACTS, DUMMY_EQUIPMENTS } from '../data/mockData';
 
@@ -14,6 +14,15 @@ export const NovaOSView = ({ onCancel, onSave }) => {
     status: 'Aberta',
     cronograma: ''
   });
+
+  const [contratosDb, setContratosDb] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/contratos')
+      .then(res => res.json())
+      .then(data => setContratosDb(data))
+      .catch(err => console.error(err));
+  }, []);
 
   const [equipamentos, setEquipamentos] = useState([]);
   const [selectedEquipamentoId, setSelectedEquipamentoId] = useState('');
@@ -138,9 +147,9 @@ export const NovaOSView = ({ onCancel, onSave }) => {
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Contrato</label>
               <select name="contrato" value={formData.contrato} onChange={handleChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200 cursor-pointer">
                 <option value="">Selecione um contrato...</option>
-                {DUMMY_CONTRACTS.map(contract => (
-                  <option key={contract.id} value={contract.id}>
-                    {contract.id}
+                {contratosDb.map(contract => (
+                  <option key={contract.id || contract.numero_contrato} value={contract.numero_contrato}>
+                    {contract.numero_contrato}
                   </option>
                 ))}
               </select>

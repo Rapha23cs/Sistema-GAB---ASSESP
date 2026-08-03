@@ -14,8 +14,14 @@ export const OrdersView = () => {
   const [filterType, setFilterType] = useState('Todos');
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [filterContract, setFilterContract] = useState('Todos');
+  const [contratosDb, setContratosDb] = useState([]);
   
   useEffect(() => {
+    fetch('http://localhost:3001/api/contratos')
+      .then(res => res.json())
+      .then(data => setContratosDb(data))
+      .catch(err => console.error(err));
+      
     setOrders(DUMMY_ORDERS);
   }, []);
 
@@ -118,8 +124,8 @@ export const OrdersView = () => {
                 className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer transition-colors"
               >
                 <option value="Todos">Contrato (Todos)</option>
-                {DUMMY_CONTRACTS.map(c => (
-                  <option key={c.id} value={c.id}>{c.id}</option>
+                {contratosDb.map(c => (
+                  <option key={c.id || c.numero_contrato} value={c.numero_contrato}>{c.numero_contrato}</option>
                 ))}
               </select>
             </div>

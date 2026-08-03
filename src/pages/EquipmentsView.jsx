@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { ContractBadge, EqStatusBadge } from '../components/Badges';
 import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
@@ -7,6 +7,15 @@ export const EquipmentsView = () => {
   const [filterType, setFilterType] = useState('Todos');
   const [expandedRow, setExpandedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [contratosDb, setContratosDb] = useState([]);
+  
+  useEffect(() => {
+    fetch('http://localhost:3001/api/contratos')
+      .then(res => res.json())
+      .then(data => setContratosDb(data))
+      .catch(err => console.error(err));
+  }, []);
+
   const [newEqData, setNewEqData] = useState({
     contrato: '',
     tipo: 'Esteira Raio - X',
@@ -215,8 +224,8 @@ export const EquipmentsView = () => {
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Contrato Vinculado</label>
                   <select name="contrato" value={newEqData.contrato} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
                     <option value="">Selecione um contrato...</option>
-                    {DUMMY_CONTRACTS.map(c => (
-                      <option key={c.id} value={c.id}>{c.id}</option>
+                    {contratosDb.map(c => (
+                      <option key={c.id || c.numero_contrato} value={c.numero_contrato}>{c.numero_contrato}</option>
                     ))}
                   </select>
                 </div>

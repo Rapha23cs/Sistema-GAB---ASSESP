@@ -1,10 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
-import { DUMMY_CONTRACTS } from '../data/mockData';
 
 export const ContratosView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
+  const [contratos, setContratos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters State
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterResponsavel, setFilterResponsavel] = useState('');
+
+  // CRUD State
+  const initialFormState = {
+    numero_contrato: '', vigencia: '', processo: '', tipo: '', recurso_financeiro: '', 
+    valor_global: '', valor_mensal: '', objeto: '', quantidade: '', execucao: '', 
+    pendencia: '', prazo_entrega: '', status_licitacao: '', localizacao: '', consulta: '', responsavel: ''
+  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState(initialFormState);
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/contratos')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setContratos(data);
+        } else {
+          console.error('API retornou erro:', data);
+          setContratos([]);
+          alert(`Erro do Backend: ${data.error || 'Verifique o terminal do servidor'}`);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error('Erro ao buscar contratos:', err);
+        setIsLoading(false);
+      });
+  }, []);
+
   const toggleRow = (id) => setExpandedRow(expandedRow === id ? null : id);
+
+  const filteredContratos = contratos.filter(contract => {
+    const searchMatch = !searchTerm || 
+      (contract.numero_contrato && contract.numero_contrato.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (contract.objeto && contract.objeto.toLowerCase().includes(searchTerm.toLowerCase()));
+    const responsavelMatch = !filterResponsavel || 
+      (contract.responsavel && contract.responsavel === filterResponsavel);
+    return searchMatch && responsavelMatch;
+  });
+
+  const responsaveis = [...new Set(contratos.map(c => c.responsavel).filter(Boolean))];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const url = editingId ? `http://localhost:3001/api/contratos/${editingId}` : 'http://localhost:3001/api/contratos';
+    const method = editingId ? 'PUT' : 'POST';
+    
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        const savedContrato = await res.json();
+        if (editingId) {
+          setContratos(prev => prev.map(c => c.id === editingId ? savedContrato : c));
+        } else {
+          setContratos(prev => [savedContrato, ...prev]);
+        }
+        setIsModalOpen(false);
+        setEditingId(null);
+        setFormData(initialFormState);
+      } else {
+        alert('Erro ao salvar contrato. Verifique os campos.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro na requisição');
+    }
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Tem certeza que deseja apagar este contrato?')) return;
+    try {
+      const res = await fetch(`http://localhost:3001/api/contratos/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setContratos(prev => prev.filter(c => c.id !== id));
+      }
+    } catch(err) {
+      console.error(err);
+      alert('Erro ao excluir');
+    }
+  };
+
+  const openNewModal = () => {
+    setFormData(initialFormState);
+    setEditingId(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (contract, e) => {
+    e.stopPropagation();
+    setFormData(contract);
+    setEditingId(contract.id);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-8">
@@ -29,12 +138,40 @@ export const ContratosView = () => {
             <Icons.FileSignature /> Gestão de Contratos
           </h2>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer">Filtros</button>
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-2 ${showFilters ? 'bg-slate-100 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'} text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer`}
+            >
+              Filtros
+            </button>
+            <button 
+              onClick={openNewModal}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+            >
               <Icons.Plus /> Novo Contrato
             </button>
           </div>
         </div>
+
+        {showFilters && (
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap gap-4">
+            <input 
+              type="text" 
+              placeholder="Buscar por número ou objeto..." 
+              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full max-w-md"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select
+              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[200px]"
+              value={filterResponsavel}
+              onChange={(e) => setFilterResponsavel(e.target.value)}
+            >
+              <option value="">Todos os Responsáveis</option>
+              {responsaveis.map((r, i) => <option key={i} value={r}>{r}</option>)}
+            </select>
+          </div>
+        )}
         
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -45,63 +182,91 @@ export const ContratosView = () => {
                 <th className="px-6 py-4 font-medium">Objeto</th>
                 <th className="px-6 py-4 font-medium">Vigência</th>
                 <th className="px-6 py-4 font-medium">Status (Licitação)</th>
-                <th className="px-6 py-4 font-medium">Responsável</th>
                 <th className="px-6 py-4 font-medium text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-sm transition-colors duration-500">
-              {DUMMY_CONTRACTS.map((contract) => {
-                const isExpanded = expandedRow === contract.id;
-
-                return (
-                  <React.Fragment key={contract.id}>
-                    <tr 
-                      onClick={() => toggleRow(contract.id)}
-                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}
-                    >
-                      <td className="px-6 py-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors">
-                        {isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
-                      </td>
-                      <td className="px-6 py-4 font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">{contract.id}</td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-800 dark:text-slate-200 max-w-xs truncate" title={contract.objeto}>{contract.objeto}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{contract.tipo} • {contract.quantidade}</div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap flex items-center gap-1.5"><Icons.Calendar /> {contract.vigencia}</td>
-                      <td className="px-6 py-4">
-                         <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium transition-colors">{contract.statusLicitacao}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                          <Icons.User /> {contract.responsavel}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100 cursor-pointer">
-                          <Icons.MoreVertical />
-                        </button>
-                      </td>
-                    </tr>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                    Carregando contratos do banco de dados...
+                  </td>
+                </tr>
+              ) : filteredContratos.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                    Nenhum contrato encontrado.
+                  </td>
+                </tr>
+              ) : (
+                filteredContratos.map((contract) => {
+                  const rowId = contract.id || contract.numero_contrato;
+                  const isExpanded = expandedRow === rowId;
+  
+                  return (
+                    <React.Fragment key={rowId}>
+                      <tr 
+                        onClick={() => toggleRow(rowId)}
+                        className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}
+                      >
+                        <td className="px-6 py-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors">
+                          {isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">{contract.numero_contrato || 'N/A'}</td>
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-slate-800 dark:text-slate-200 max-w-xs truncate" title={contract.objeto}>{contract.objeto || '-'}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{contract.tipo || '-'} • {contract.quantidade || '-'}</div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 max-w-[160px]" title={contract.vigencia}>
+                            <Icons.Calendar className="shrink-0" /> 
+                            <span className="truncate">{contract.vigencia || '-'}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                           <div className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium transition-colors truncate max-w-[180px] inline-block align-middle" title={contract.status_licitacao}>
+                             {contract.status_licitacao || '-'}
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={(e) => openEditModal(contract, e)}
+                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors cursor-pointer"
+                              title="Editar"
+                            >
+                              <Icons.Edit />
+                            </button>
+                            <button 
+                              onClick={(e) => handleDelete(contract.id, e)}
+                              className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded transition-colors cursor-pointer"
+                              title="Excluir"
+                            >
+                              <Icons.Trash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     
                     {/* Expanded Content Details */}
                     {isExpanded && (
                       <tr className="bg-slate-50/50 dark:bg-slate-900/30 transition-colors duration-500">
-                        <td colSpan="7" className="p-0 border-b border-slate-200 dark:border-slate-800">
+                        <td colSpan="6" className="p-0 border-b border-slate-200 dark:border-slate-800">
                           <div className="px-16 py-8">
                             <div className="grid grid-cols-4 gap-x-8 gap-y-6">
                               {/* Column 1 */}
                               <div className="space-y-4">
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Processo Mãe</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200 font-mono">{contract.processoMae}</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200 font-mono">{contract.processo || '-'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Tipo / Quantidade</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200">{contract.tipo} ({contract.quantidade})</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200">{contract.tipo || '-'} ({contract.quantidade || '-'})</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Localização</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.MapMap /> {contract.localizacao}</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.MapMap /> {contract.localizacao || '-'}</p>
                                 </div>
                               </div>
                               
@@ -109,15 +274,15 @@ export const ContratosView = () => {
                               <div className="space-y-4">
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Valor Global</p>
-                                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{contract.valorGlobal}</p>
+                                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{contract.valor_global || '-'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Valor Mensal</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200">{contract.valorMensal}</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200">{contract.valor_mensal || '-'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Recurso Financeiro</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200">{contract.recursoFinanceiro}</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200">{contract.recurso_financeiro || '-'}</p>
                                 </div>
                               </div>
 
@@ -127,18 +292,18 @@ export const ContratosView = () => {
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Execução</p>
                                   <div className="flex items-center gap-3">
                                     <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                      <div className="h-full bg-blue-600 rounded-full" style={{ width: contract.execucao }}></div>
+                                      <div className="h-full bg-blue-600 rounded-full" style={{ width: contract.execucao && contract.execucao.includes('%') ? contract.execucao : '0%' }}></div>
                                     </div>
-                                    <span className="text-sm text-slate-700 dark:text-slate-300 font-mono">{contract.execucao}</span>
+                                    <span className="text-sm text-slate-700 dark:text-slate-300 font-mono">{contract.execucao || '-'}</span>
                                   </div>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Pendência (Saldo)</p>
-                                  <p className="text-sm text-rose-600 dark:text-rose-400 font-bold">{contract.pendencia}</p>
+                                  <p className="text-sm text-rose-600 dark:text-rose-400 font-bold">{contract.pendencia || '-'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Última Consulta</p>
-                                  <p className="text-sm text-slate-600 dark:text-slate-400">{contract.ultimaConsulta}</p>
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">{contract.consulta || '-'}</p>
                                 </div>
                               </div>
 
@@ -146,26 +311,42 @@ export const ContratosView = () => {
                               <div className="space-y-4">
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Prazo de Entrega (Prev)</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Clock /> {contract.prazoEntrega}</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Clock /> {contract.prazo_entrega || '-'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Responsável</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
-                                      {contract.responsavel && contract.responsavel.charAt(0)}
+                                      {contract.responsavel ? contract.responsavel.charAt(0) : '-'}
                                     </div>
-                                    <p className="text-sm text-slate-800 dark:text-slate-200">{contract.responsavel}</p>
+                                    <p className="text-sm text-slate-800 dark:text-slate-200">{contract.responsavel || '-'}</p>
                                   </div>
                                 </div>
                               </div>
                             </div>
 
                             {/* Full width object text */}
-                            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2">Objeto (Descrição Completa)</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
-                                  {contract.objeto}
-                                </p>
+                            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2">Objeto (Descrição Completa)</p>
+                                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors min-h-[80px]">
+                                    {contract.objeto || '-'}
+                                  </p>
+                                </div>
+                                <div className="space-y-4">
+                                  <div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2">Status do Processo (Completo)</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                                      {contract.status_licitacao || '-'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2">Vigência (Completa)</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                                      {contract.vigencia || '-'}
+                                    </p>
+                                  </div>
+                                </div>
                             </div>
                           </div>
                         </td>
@@ -173,11 +354,146 @@ export const ContratosView = () => {
                     )}
                   </React.Fragment>
                 );
-              })}
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* CRUD Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                {editingId ? 'Editar Contrato' : 'Novo Contrato'}
+              </h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              >
+                <Icons.X />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Info */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Informações Principais</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nº do Contrato *</label>
+                    <input required name="numero_contrato" value={formData.numero_contrato} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Objeto (Descrição)</label>
+                    <textarea name="objeto" value={formData.objeto} onChange={handleInputChange} rows="3" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"></textarea>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Processo Mãe</label>
+                      <input name="processo" value={formData.processo} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Responsável</label>
+                      <input name="responsavel" value={formData.responsavel} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo (OS/OF)</label>
+                      <input name="tipo" value={formData.tipo} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade</label>
+                      <input name="quantidade" value={formData.quantidade} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status da Licitação</label>
+                    <input name="status_licitacao" value={formData.status_licitacao} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Localização</label>
+                    <input name="localizacao" value={formData.localizacao} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  </div>
+                </div>
+
+                {/* Finance and Execution */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Valores e Acompanhamento</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor Global</label>
+                      <input name="valor_global" value={formData.valor_global} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor Mensal</label>
+                      <input name="valor_mensal" value={formData.valor_mensal} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Recurso Financeiro</label>
+                    <input name="recurso_financeiro" value={formData.recurso_financeiro} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Execução (%)</label>
+                      <input name="execucao" value={formData.execucao} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Ex: 50%" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pendência (Saldo)</label>
+                      <input name="pendencia" value={formData.pendencia} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vigência (Descrição)</label>
+                    <input name="vigencia" value={formData.vigencia} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Prazo de Entrega</label>
+                      <input name="prazo_entrega" value={formData.prazo_entrega} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Última Consulta</label>
+                      <input name="consulta" value={formData.consulta} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm cursor-pointer"
+                >
+                  {editingId ? 'Atualizar Contrato' : 'Salvar Contrato'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -12,3 +12,7 @@ build/
 *-wal
 *-shm
 dados_empresa.db
+
+# Google Sheets Auth
+client_secret*.json
+token.json
