@@ -36,29 +36,40 @@ export const StatusBadge = ({ status }) => {
 };
 
 export const ContractBadge = ({ status }) => {
-  const config = {
-    'com_contrato': { styles: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50', label: 'Com Contrato' },
-    'sem_contrato': { styles: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50', label: 'Sem Contrato' },
-    'garantia': { styles: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50', label: 'Em Garantia' },
-  };
-  const current = config[status] || config['sem_contrato'];
+  const val = (status || '').toUpperCase();
+  
+  let styles = 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50';
+  
+  if (val.includes('SEM CONTRATO')) {
+    styles = 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50';
+  } else if (val.includes('GARANTIA')) {
+    styles = 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50';
+  }
+
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border inline-flex items-center gap-1.5 uppercase tracking-wide transition-colors ${current.styles}`}>
-      <Icons.FileText />{current.label}
+    <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border inline-flex items-center gap-1.5 uppercase tracking-wide transition-colors ${styles}`} title={status}>
+      <Icons.FileText />{status || 'Sem Info'}
     </span>
   );
 };
 
 export const EqStatusBadge = ({ status }) => {
-  const config = {
-    'operante': { styles: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50', label: 'Operante', Icon: Icons.CheckCircle },
-    'inoperante': { styles: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50', label: 'Inoperante', Icon: Icons.AlertCircle },
-    'manutencao': { styles: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50', label: 'Em Manutenção', Icon: Icons.Wrench },
-  };
-  const current = config[status] || config['inoperante'];
+  const val = (status || '').toUpperCase();
+  
+  let styles = 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50';
+  let Icon = Icons.CheckCircle;
+
+  if (val.includes('INOPERANTE') || val.includes('CONDENADO')) {
+    styles = 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50';
+    Icon = Icons.AlertCircle;
+  } else if (val.includes('ANÁLISE') || val.includes('AVALIAÇÃO') || val.includes('MANUTENÇÃO') || val.includes('MANUTENCAO')) {
+    styles = 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50';
+    Icon = Icons.Wrench;
+  }
+
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1.5 transition-colors ${current.styles}`}>
-      <current.Icon />{current.label}
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1.5 transition-colors ${styles}`} title={status}>
+      <Icon />{status || 'Sem Info'}
     </span>
   );
 };

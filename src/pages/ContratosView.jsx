@@ -21,7 +21,8 @@ export const ContratosView = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
+  const fetchContratos = () => {
+    setIsLoading(true);
     fetch('http://localhost:3001/api/contratos')
       .then(res => res.json())
       .then(data => {
@@ -38,7 +39,16 @@ export const ContratosView = () => {
         console.error('Erro ao buscar contratos:', err);
         setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchContratos();
   }, []);
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterResponsavel('');
+  };
 
   const toggleRow = (id) => setExpandedRow(expandedRow === id ? null : id);
 
@@ -115,15 +125,54 @@ export const ContratosView = () => {
     setIsModalOpen(true);
   };
 
+  // KPI Calculations
+  const parseCurrency = (value) => {
+    if (!value) return 0;
+    if (typeof value === 'number') return value;
+    const clean = value.replace(/[R$\s.]/g, '').replace(',', '.');
+    return parseFloat(clean) || 0;
+  };
+  
+  const totalContratos = contratos.length;
+  
+  const totalValue = contratos.reduce((sum, c) => sum + parseCurrency(c.valor_global), 0);
+  const formattedTotalValue = new Intl.NumberFormat('pt-BR', { 
+    style: 'currency', 
+    currency: 'BRL', 
+    notation: 'compact', 
+    maximumFractionDigits: 1 
+  }).format(totalValue);
+
+  const contratosAtivos = contratos.filter(c => {
+    const p = (c.pendencia || '').toLowerCase();
+    const v = (c.vigencia || '').toLowerCase();
+    return !p.includes('finalizado') && !v.includes('finalizado');
+  }).length;
+
+  const aVencer90dias = contratos.filter(c => {
+    const dates = (c.vigencia || '').match(/\d{2}\/\d{2}\/\d{4}/g);
+    if (dates && dates.length > 0) {
+      const lastDateStr = dates[dates.length - 1];
+      const [d, m, y] = lastDateStr.split('/');
+      const endDate = new Date(y, m - 1, d);
+      const now = new Date();
+      const diffTime = endDate - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 90;
+    }
+    return false;
+  }).length;
+
+
   return (
     <div className="space-y-8">
       {/* Metrics for Contracts */}
       <div className="grid grid-cols-4 gap-6">
         {[
-          { label: 'Total de Contratos', value: '18', color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Valor Global Total', value: 'R$ 8.5M', color: 'bg-white dark:bg-slate-900', text: 'text-blue-600 dark:text-blue-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Contratos Ativos', value: '12', color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'A Vencer (90 dias)', value: '2', color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: 'Total de Contratos', value: totalContratos.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
+          { label: 'Valor Global Total', value: formattedTotalValue, color: 'bg-white dark:bg-slate-900', text: 'text-blue-600 dark:text-blue-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: 'Contratos Ativos', value: contratosAtivos.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: 'A Vencer (90 dias)', value: aVencer90dias.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
         ].map((stat, i) => (
           <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-default group`}>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">{stat.label}</p>
@@ -138,6 +187,13 @@ export const ContratosView = () => {
             <Icons.FileSignature /> Gestão de Contratos
           </h2>
           <div className="flex gap-3">
+            <button 
+              onClick={fetchContratos}
+              className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center gap-2 cursor-pointer"
+              title="Atualizar Dados"
+            >
+              <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
+            </button>
             <button 
               onClick={() => setShowFilters(!showFilters)}
               className={`px-4 py-2 ${showFilters ? 'bg-slate-100 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'} text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer`}
@@ -170,6 +226,14 @@ export const ContratosView = () => {
               <option value="">Todos os Responsáveis</option>
               {responsaveis.map((r, i) => <option key={i} value={r}>{r}</option>)}
             </select>
+            {(searchTerm || filterResponsavel) && (
+              <button 
+                onClick={clearFilters}
+                className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
+              >
+                Limpar Filtros
+              </button>
+            )}
           </div>
         )}
         
@@ -177,11 +241,11 @@ export const ContratosView = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-200 dark:border-slate-800 transition-colors duration-500">
-                <th className="px-6 py-4 font-medium w-10"></th>
-                <th className="px-6 py-4 font-medium">Contrato</th>
-                <th className="px-6 py-4 font-medium">Objeto</th>
-                <th className="px-6 py-4 font-medium">Vigência</th>
-                <th className="px-6 py-4 font-medium">Status (Licitação)</th>
+                <th className="pl-4 pr-2 py-4 font-medium w-8"></th>
+                <th className="px-6 py-4 font-medium w-1/4">Contrato</th>
+                <th className="px-6 py-4 font-medium w-1/4">Objeto</th>
+                <th className="px-6 py-4 font-medium w-1/4">Processo Mãe</th>
+                <th className="px-6 py-4 font-medium">Última Consulta</th>
                 <th className="px-6 py-4 font-medium text-center">Ações</th>
               </tr>
             </thead>
@@ -209,7 +273,7 @@ export const ContratosView = () => {
                         onClick={() => toggleRow(rowId)}
                         className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}
                       >
-                        <td className="px-6 py-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors">
+                        <td className="pl-4 pr-2 py-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors">
                           {isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
                         </td>
                         <td className="px-6 py-4 font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">{contract.numero_contrato || 'N/A'}</td>
@@ -217,16 +281,11 @@ export const ContratosView = () => {
                           <div className="font-medium text-slate-800 dark:text-slate-200 max-w-xs truncate" title={contract.objeto}>{contract.objeto || '-'}</div>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{contract.tipo || '-'} • {contract.quantidade || '-'}</div>
                         </td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 max-w-[160px]" title={contract.vigencia}>
-                            <Icons.Calendar className="shrink-0" /> 
-                            <span className="truncate">{contract.vigencia || '-'}</span>
-                          </div>
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-slate-700 dark:text-slate-300 font-medium">{contract.processo || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
-                           <div className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium transition-colors truncate max-w-[180px] inline-block align-middle" title={contract.status_licitacao}>
-                             {contract.status_licitacao || '-'}
-                           </div>
+                           <span className="font-medium text-slate-700 dark:text-slate-300">{contract.consulta || '-'}</span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -252,13 +311,13 @@ export const ContratosView = () => {
                     {isExpanded && (
                       <tr className="bg-slate-50/50 dark:bg-slate-900/30 transition-colors duration-500">
                         <td colSpan="6" className="p-0 border-b border-slate-200 dark:border-slate-800">
-                          <div className="px-16 py-8">
+                          <div className="pl-12 pr-8 py-8">
                             <div className="grid grid-cols-4 gap-x-8 gap-y-6">
                               {/* Column 1 */}
                               <div className="space-y-4">
                                 <div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Processo Mãe</p>
-                                  <p className="text-sm text-slate-800 dark:text-slate-200 font-mono">{contract.processo || '-'}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Vigência</p>
+                                  <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Calendar className="shrink-0 w-4 h-4" /> {contract.vigencia || '-'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Tipo / Quantidade</p>
@@ -302,8 +361,10 @@ export const ContratosView = () => {
                                   <p className="text-sm text-rose-600 dark:text-rose-400 font-bold">{contract.pendencia || '-'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Última Consulta</p>
-                                  <p className="text-sm text-slate-600 dark:text-slate-400">{contract.consulta || '-'}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Status (Licitação)</p>
+                                  <div className="inline-flex px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium mt-1">
+                                    {contract.status_licitacao || '-'}
+                                  </div>
                                 </div>
                               </div>
 

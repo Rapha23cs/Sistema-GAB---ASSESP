@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -29,13 +29,13 @@ async function getDoc() {
 
   const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
   const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
-  
-  const {client_secret, client_id} = credentials.web || credentials.installed;
+
+  const { client_secret, client_id } = credentials.web || credentials.installed;
   const oAuth2Client = new OAuth2Client(client_id, client_secret);
   oAuth2Client.setCredentials(token);
 
   const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, oAuth2Client);
-  await doc.loadInfo(); 
+  await doc.loadInfo();
   return doc;
 }
 
@@ -45,32 +45,32 @@ app.get('/api/contratos', async (req, res) => {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle['Contratos - PPMA'];
     if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
-    
+
     await sheet.loadHeaderRow(5);
 
     const rows = await sheet.getRows();
     const contratos = rows
       .filter(row => row.get('CONTRATO') || row.get('OBJETO') || row.get('RESPONSÁVEL')) // Ignora linhas vazias
       .map((row) => ({
-      id: row.rowNumber, // Usamos o número da linha como ID único para editar/deletar
-      numero_contrato: row.get('CONTRATO'),
-      vigencia: row.get('VIGÊNCIA'),
-      processo: row.get('PROCESSO "mãe" (SEI ou físico)'),
-      tipo: row.get('TIPO (OS/OF)'),
-      recurso_financeiro: row.get('RECURSO FINANCEIRO'),
-      valor_global: row.get('VALOR GLOBAL (atualizado)'),
-      valor_mensal: row.get('VALOR MENSAL'),
-      objeto: row.get('OBJETO'),
-      quantidade: row.get('QUANTIDADE'),
-      execucao: row.get('EXECUÇÃO'),
-      pendencia: row.get('PENDÊNCIA (saldo)'),
-      prazo_entrega: row.get('PRAZO DE ENTREGA (previsão)'),
-      status_licitacao: row.get('STATUS do Proc. Licitatório'),
-      localizacao: row.get('LOCALIZAÇÃO'),
-      consulta: row.get('CONSULTA'),
-      responsavel: row.get('RESPONSÁVEL')
-    }));
-    
+        id: row.rowNumber, // Usamos o número da linha como ID único para editar/deletar
+        numero_contrato: row.get('CONTRATO'),
+        vigencia: row.get('VIGÊNCIA'),
+        processo: row.get('PROCESSO "mãe" (SEI ou físico)'),
+        tipo: row.get('TIPO (OS/OF)'),
+        recurso_financeiro: row.get('RECURSO FINANCEIRO'),
+        valor_global: row.get('VALOR GLOBAL (atualizado)'),
+        valor_mensal: row.get('VALOR MENSAL'),
+        objeto: row.get('OBJETO'),
+        quantidade: row.get('QUANTIDADE'),
+        execucao: row.get('EXECUÇÃO'),
+        pendencia: row.get('PENDÊNCIA (saldo)'),
+        prazo_entrega: row.get('PRAZO DE ENTREGA (previsão)'),
+        status_licitacao: row.get('STATUS do Proc. Licitatório'),
+        localizacao: row.get('LOCALIZAÇÃO'),
+        consulta: row.get('CONSULTA'),
+        responsavel: row.get('RESPONSÁVEL')
+      }));
+
     // Inverte a ordem para os mais recentes (últimas linhas da planilha) aparecerem primeiro
     res.json(contratos.reverse());
   } catch (error) {
@@ -81,7 +81,7 @@ app.get('/api/contratos', async (req, res) => {
 
 app.post('/api/contratos', async (req, res) => {
   const data = req.body;
-  
+
   try {
     const doc = await getDoc();
     let sheet = doc.sheetsByTitle['Contratos - PPMA'];
@@ -119,7 +119,7 @@ app.post('/api/contratos', async (req, res) => {
 app.put('/api/contratos/:id', async (req, res) => {
   const { id } = req.params; // número da linha
   const data = req.body;
-  
+
   try {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle['Contratos - PPMA'];
@@ -128,7 +128,7 @@ app.put('/api/contratos/:id', async (req, res) => {
     await sheet.loadHeaderRow(5);
     const rows = await sheet.getRows();
     const rowToUpdate = rows.find(r => r.rowNumber === parseInt(id));
-    
+
     if (!rowToUpdate) return res.status(404).json({ error: 'Contrato não encontrado na planilha' });
 
     rowToUpdate.assign({
@@ -161,7 +161,7 @@ app.put('/api/contratos/:id', async (req, res) => {
 
 app.delete('/api/contratos/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle['Contratos - PPMA'];
@@ -170,13 +170,150 @@ app.delete('/api/contratos/:id', async (req, res) => {
     await sheet.loadHeaderRow(5);
     const rows = await sheet.getRows();
     const rowToDelete = rows.find(r => r.rowNumber === parseInt(id));
-    
+
     if (!rowToDelete) return res.status(404).json({ error: 'Contrato não encontrado na planilha' });
 
     await rowToDelete.delete();
     res.json({ message: 'Contrato deletado com sucesso do Google Sheets' });
   } catch (error) {
     console.error('Erro DELETE Contratos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+// Rotas de Equipamentos
+const EQUIP_SHEETS = [
+  { title: 'Esteira Raio-x (status)', headerRow: 5, category: 'Esteira Raio-x' },
+  { title: 'Bodyscan (status)', headerRow: 5, category: 'Bodyscan' },
+  { title: 'Pórticos (status)', headerRow: 4, category: 'Pórticos' }
+];
+
+app.get('/api/equipamentos', async (req, res) => {
+  try {
+    const doc = await getDoc();
+    let todosEquipamentos = [];
+
+    for (const conf of EQUIP_SHEETS) {
+      const sheet = doc.sheetsByTitle[conf.title];
+      if (sheet) {
+        await sheet.loadHeaderRow(conf.headerRow);
+        const rows = await sheet.getRows();
+        const equipamentos = rows
+          .filter(row => row.get('EQUIPAMENTO') || row.get('N° DE SÉRIE'))
+          .map(row => ({
+            id: row.rowNumber,
+            categoria: conf.category,
+            sheetTitle: conf.title,
+            cobertura_contrato: row.get('COBERTURA DE CONTRATO'),
+            localidade: row.get('LOCALIDADE'),
+            equipamento: row.get('EQUIPAMENTO'),
+            unidade: row.get('UNIDADE'),
+            modelo: row.get('MODELO'),
+            numero_serie: row.get('N° DE SÉRIE'),
+            informacoes_pendencias: row.get('INFORMAÇÕES / PENDÊNCIAS'),
+            status: row.get('STATUS'),
+            ordem_servico: row.get('ORDEM DE SERVIÇO (atual)')
+          }));
+        todosEquipamentos = [...todosEquipamentos, ...equipamentos];
+      }
+    }
+    // Não vamos usar o reverse no array inteiro senão mistura as abas. Mas tudo bem, o react pode ordenar.
+    res.json(todosEquipamentos.reverse());
+  } catch (error) {
+    console.error('Erro GET Equipamentos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/equipamentos', async (req, res) => {
+  const data = req.body;
+  try {
+    const conf = EQUIP_SHEETS.find(c => c.category === data.categoria);
+    if (!conf) return res.status(400).json({ error: 'Categoria inválida' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle[conf.title];
+    if (!sheet) return res.status(404).json({ error: `Aba ${conf.title} não encontrada` });
+
+    await sheet.loadHeaderRow(conf.headerRow);
+    const newRow = await sheet.addRow({
+      'COBERTURA DE CONTRATO': data.cobertura_contrato || '',
+      'LOCALIDADE': data.localidade || '',
+      'EQUIPAMENTO': data.equipamento || '',
+      'UNIDADE': data.unidade || '',
+      'MODELO': data.modelo || '',
+      'N° DE SÉRIE': data.numero_serie || '',
+      'INFORMAÇÕES / PENDÊNCIAS': data.informacoes_pendencias || '',
+      'STATUS': data.status || '',
+      'ORDEM DE SERVIÇO (atual)': data.ordem_servico || ''
+    });
+
+    res.status(201).json({ ...data, id: newRow.rowNumber, sheetTitle: conf.title });
+  } catch (error) {
+    console.error('Erro POST Equipamentos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/equipamentos/:id', async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+
+  try {
+    const conf = EQUIP_SHEETS.find(c => c.category === data.categoria);
+    if (!conf) return res.status(400).json({ error: 'Categoria inválida' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle[conf.title];
+    if (!sheet) return res.status(404).json({ error: `Aba ${conf.title} não encontrada` });
+
+    await sheet.loadHeaderRow(conf.headerRow);
+    const rows = await sheet.getRows();
+    const rowToUpdate = rows.find(r => r.rowNumber === parseInt(id));
+
+    if (!rowToUpdate) return res.status(404).json({ error: 'Equipamento não encontrado' });
+
+    rowToUpdate.assign({
+      'COBERTURA DE CONTRATO': data.cobertura_contrato || '',
+      'LOCALIDADE': data.localidade || '',
+      'EQUIPAMENTO': data.equipamento || '',
+      'UNIDADE': data.unidade || '',
+      'MODELO': data.modelo || '',
+      'N° DE SÉRIE': data.numero_serie || '',
+      'INFORMAÇÕES / PENDÊNCIAS': data.informacoes_pendencias || '',
+      'STATUS': data.status || '',
+      'ORDEM DE SERVIÇO (atual)': data.ordem_servico || ''
+    });
+
+    await rowToUpdate.save();
+    res.json({ ...data, id: rowToUpdate.rowNumber, sheetTitle: conf.title });
+  } catch (error) {
+    console.error('Erro PUT Equipamentos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/equipamentos/:id', async (req, res) => {
+  const { id } = req.params;
+  const categoria = req.query.categoria;
+
+  try {
+    const conf = EQUIP_SHEETS.find(c => c.category === categoria);
+    if (!conf) return res.status(400).json({ error: 'Categoria inválida para deleção' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle[conf.title];
+    if (!sheet) return res.status(404).json({ error: `Aba ${conf.title} não encontrada` });
+
+    await sheet.loadHeaderRow(conf.headerRow);
+    const rows = await sheet.getRows();
+    const rowToDelete = rows.find(r => r.rowNumber === parseInt(id));
+
+    if (!rowToDelete) return res.status(404).json({ error: 'Equipamento não encontrado' });
+
+    await rowToDelete.delete();
+    res.json({ message: 'Equipamento deletado' });
+  } catch (error) {
+    console.error('Erro DELETE Equipamentos:', error);
     res.status(500).json({ error: error.message });
   }
 });
