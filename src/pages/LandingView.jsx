@@ -16,8 +16,8 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
     featureTitle: isDark ? "text-white" : "text-gab-dark",
     featureDesc: isDark ? "text-slate-400" : "text-slate-600",
     btnPrimary: "bg-gab-gold hover:brightness-110 text-gab-dark shadow-gab-gold/20",
-    btnSecondary: isDark 
-      ? "bg-gab-darker text-white hover:bg-slate-800 border-slate-700" 
+    btnSecondary: isDark
+      ? "bg-gab-darker text-white hover:bg-slate-800 border-slate-700"
       : "bg-white text-gab-dark hover:bg-slate-50 border-slate-200",
     footer: isDark ? "border-white/5 text-slate-500" : "border-slate-200 text-slate-500",
     blob1: isDark ? "bg-gab-gold/10" : "bg-gab-gold/20",
@@ -50,7 +50,7 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => setIsDark(!isDark)}
@@ -59,16 +59,16 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
           >
             {isDark ? <Icons.Sun /> : <Icons.Moon />}
           </button>
-          
+
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-700 mx-1 sm:mx-2"></div>
 
-          <button 
+          <button
             onClick={onOpenLogin}
             className={`px-3 sm:px-5 py-2 text-sm font-semibold transition-colors ${theme.btnGhost}`}
           >
             Entrar
           </button>
-          <button 
+          <button
             onClick={onOpenRegister}
             className={`px-4 sm:px-5 py-2 text-sm font-bold rounded-xl shadow-lg transition-all active:scale-95 ${theme.btnPrimary}`}
           >
@@ -88,24 +88,24 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
         </div>
 
         <h1 className={`text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 transition-colors duration-500 ${theme.title}`}>
-          Excelência em <br className="hidden md:block"/>
+          Excelência em <br className="hidden md:block" />
           <span className={theme.titleHighlight}>
             Administração Legal
           </span>
         </h1>
-        
+
         <p className={`text-lg md:text-xl max-w-2xl mb-12 leading-relaxed transition-colors duration-500 ${theme.subtitle}`}>
           Centralize contratos, controle processos operacionais e garanta conformidade total para o seu setor jurídico com nossa plataforma inteligente e segura.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <button 
+          <button
             onClick={onOpenRegister}
             className={`px-8 py-4 text-base font-bold rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${theme.btnPrimary}`}
           >
             Começar agora <Icons.FileSignature />
           </button>
-          <button 
+          <button
             onClick={onOpenLogin}
             className={`px-8 py-4 text-base font-bold rounded-2xl shadow-xl border transition-all active:scale-95 flex items-center justify-center gap-2 ${theme.btnSecondary}`}
           >

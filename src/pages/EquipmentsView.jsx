@@ -20,13 +20,13 @@ export const EquipmentsView = () => {
     setIsLoading(true);
     fetch('http://localhost:3001/api/contratos')
       .then(res => res.json())
-      .then(data => setContratosDb(data))
+      .then(data => setContratosDb(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
       
     fetch('http://localhost:3001/api/equipamentos')
       .then(res => res.json())
       .then(data => {
-        setEquipamentos(data);
+        setEquipamentos(Array.isArray(data) ? data : []);
         setIsLoading(false);
       })
       .catch(err => {
