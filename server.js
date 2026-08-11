@@ -34,8 +34,23 @@ async function getDoc() {
     throw new Error('SPREADSHEET_ID não configurado corretamente no .env');
   }
 
-  const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
-  const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+  let credentials;
+  if (fs.existsSync(CREDENTIALS_PATH)) {
+    credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+  } else if (process.env.GOOGLE_CREDENTIALS) {
+    credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  } else {
+    throw new Error('Arquivo de credenciais não encontrado e variável GOOGLE_CREDENTIALS não definida.');
+  }
+
+  let token;
+  if (fs.existsSync(TOKEN_PATH)) {
+    token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+  } else if (process.env.GOOGLE_TOKEN) {
+    token = JSON.parse(process.env.GOOGLE_TOKEN);
+  } else {
+    throw new Error('Arquivo de token não encontrado e variável GOOGLE_TOKEN não definida.');
+  }
 
   const { client_secret, client_id } = credentials.web || credentials.installed;
   const oAuth2Client = new OAuth2Client(client_id, client_secret);

@@ -28,9 +28,9 @@ export const DashboardView = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:3001/api/oss').then(res => res.json()),
-      fetch('http://localhost:3001/api/contratos').then(res => res.json()),
-      fetch('http://localhost:3001/api/equipamentos').then(res => res.json())
+      fetch('https://sistema-gab-assesp.onrender.com/api/oss').then(res => res.json()),
+      fetch('https://sistema-gab-assesp.onrender.com/api/contratos').then(res => res.json()),
+      fetch('https://sistema-gab-assesp.onrender.com/api/equipamentos').then(res => res.json())
     ]).then(([ossData, contratosData, equipamentosData]) => {
       setOss(Array.isArray(ossData) ? ossData : []);
       setContratos(Array.isArray(contratosData) ? contratosData : []);

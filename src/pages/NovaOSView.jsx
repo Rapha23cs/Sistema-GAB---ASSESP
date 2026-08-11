@@ -21,7 +21,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
   const [equipamentosDb, setEquipamentosDb] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/contratos')
+    fetch('https://sistema-gab-assesp.onrender.com/api/contratos')
       .then(res => res.json())
       .then(data => {
         setContratosDb(data);
@@ -30,7 +30,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
       })
       .catch(err => console.error(err));
       
-    fetch('http://localhost:3001/api/equipamentos')
+    fetch('https://sistema-gab-assesp.onrender.com/api/equipamentos')
       .then(res => res.json())
       .then(data => setEquipamentosDb(data))
       .catch(err => console.error(err));

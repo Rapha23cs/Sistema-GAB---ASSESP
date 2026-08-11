@@ -10,7 +10,7 @@ export const AddEquipmentToOSModal = ({ order, onCancel, onSave }) => {
   const [equipamentosDb, setEquipamentosDb] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/equipamentos')
+    fetch('https://sistema-gab-assesp.onrender.com/api/equipamentos')
       .then(res => res.json())
       .then(data => setEquipamentosDb(data))
       .catch(err => console.error(err));
