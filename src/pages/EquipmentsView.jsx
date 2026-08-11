@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { ContractBadge, EqStatusBadge } from '../components/Badges';
@@ -18,12 +19,12 @@ export const EquipmentsView = () => {
 
   const fetchData = () => {
     setIsLoading(true);
-    fetch('https://sistema-gab-assesp.onrender.com/api/contratos')
+    fetch(`${API_URL}/api/contratos`)
       .then(res => res.json())
       .then(data => setContratosDb(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
       
-    fetch('https://sistema-gab-assesp.onrender.com/api/equipamentos')
+    fetch(`${API_URL}/api/equipamentos`)
       .then(res => res.json())
       .then(data => {
         setEquipamentos(Array.isArray(data) ? data : []);
@@ -81,7 +82,7 @@ export const EquipmentsView = () => {
 
   const handleSaveEquipment = async () => {
     const isEditing = !!editingId;
-    const url = isEditing ? `https://sistema-gab-assesp.onrender.com/api/equipamentos/${editingId}` : 'https://sistema-gab-assesp.onrender.com/api/equipamentos';
+    const url = isEditing ? `${API_URL}/api/equipamentos/${editingId}` : `${API_URL}/api/equipamentos`;
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
@@ -112,7 +113,7 @@ export const EquipmentsView = () => {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja apagar este equipamento?')) return;
     try {
-      const res = await fetch(`https://sistema-gab-assesp.onrender.com/api/equipamentos/${id}?categoria=${encodeURIComponent(categoria)}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/equipamentos/${id}?categoria=${encodeURIComponent(categoria)}`, { method: 'DELETE' });
       if (res.ok) {
         setEquipamentos(prev => prev.filter(eq => !(eq.id === id && eq.categoria === categoria)));
       }

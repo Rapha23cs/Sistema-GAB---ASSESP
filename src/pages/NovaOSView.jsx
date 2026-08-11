@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 
@@ -21,7 +22,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
   const [equipamentosDb, setEquipamentosDb] = useState([]);
 
   useEffect(() => {
-    fetch('https://sistema-gab-assesp.onrender.com/api/contratos')
+    fetch(`${API_URL}/api/contratos`)
       .then(res => res.json())
       .then(data => {
         setContratosDb(data);
@@ -30,7 +31,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
       })
       .catch(err => console.error(err));
       
-    fetch('https://sistema-gab-assesp.onrender.com/api/equipamentos')
+    fetch(`${API_URL}/api/equipamentos`)
       .then(res => res.json())
       .then(data => setEquipamentosDb(data))
       .catch(err => console.error(err));

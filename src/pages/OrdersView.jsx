@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { TypeBadge, StatusBadge } from '../components/Badges';
@@ -27,12 +28,12 @@ export const OrdersView = () => {
   
   const fetchData = () => {
     setIsLoading(true);
-    fetch('https://sistema-gab-assesp.onrender.com/api/contratos')
+    fetch(`${API_URL}/api/contratos`)
       .then(res => res.json())
       .then(data => setContratosDb(data))
       .catch(err => console.error(err));
       
-    fetch(`https://sistema-gab-assesp.onrender.com/api/oss?t=${Date.now()}`)
+    fetch(`${API_URL}/api/oss?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -174,7 +175,7 @@ export const OrdersView = () => {
     }
 
     try {
-      const res = await fetch('https://sistema-gab-assesp.onrender.com/api/oss', {
+      const res = await fetch(`${API_URL}/api/oss`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(itemsToSave)
@@ -192,7 +193,7 @@ export const OrdersView = () => {
   };
 
   const handleUpdateEquipmentTask = (updatedEq) => {
-    fetch(`https://sistema-gab-assesp.onrender.com/api/oss/${updatedEq.id}`, {
+    fetch(`${API_URL}/api/oss/${updatedEq.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -225,7 +226,7 @@ export const OrdersView = () => {
     let hasError = false;
     for (const row of order.allRows) {
       try {
-        const res = await fetch(`https://sistema-gab-assesp.onrender.com/api/oss/${row.id}`, {
+        const res = await fetch(`${API_URL}/api/oss/${row.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -298,7 +299,7 @@ export const OrdersView = () => {
     }
 
     try {
-      const res = await fetch('https://sistema-gab-assesp.onrender.com/api/oss', {
+      const res = await fetch(`${API_URL}/api/oss`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(itemsToSave)
@@ -325,7 +326,7 @@ export const OrdersView = () => {
 
     try {
       for (const row of sortedRows) {
-        const res = await fetch(`https://sistema-gab-assesp.onrender.com/api/oss/${row.id}?categoria=${encodeURIComponent(row.categoria)}`, {
+        const res = await fetch(`${API_URL}/api/oss/${row.id}?categoria=${encodeURIComponent(row.categoria)}`, {
           method: 'DELETE'
         });
         if (!res.ok) throw new Error("Erro ao deletar linha ID: " + row.id);

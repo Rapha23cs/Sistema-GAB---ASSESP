@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 
@@ -10,7 +11,7 @@ export const AddEquipmentToOSModal = ({ order, onCancel, onSave }) => {
   const [equipamentosDb, setEquipamentosDb] = useState([]);
 
   useEffect(() => {
-    fetch('https://sistema-gab-assesp.onrender.com/api/equipamentos')
+    fetch(`${API_URL}/api/equipamentos`)
       .then(res => res.json())
       .then(data => setEquipamentosDb(data))
       .catch(err => console.error(err));

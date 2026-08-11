@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 
@@ -23,7 +24,7 @@ export const ContratosView = () => {
 
   const fetchContratos = () => {
     setIsLoading(true);
-    fetch(`https://sistema-gab-assesp.onrender.com/api/contratos?t=${Date.now()}`)
+    fetch(`${API_URL}/api/contratos?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -70,7 +71,7 @@ export const ContratosView = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const url = editingId ? `https://sistema-gab-assesp.onrender.com/api/contratos/${editingId}` : 'https://sistema-gab-assesp.onrender.com/api/contratos';
+    const url = editingId ? `${API_URL}/api/contratos/${editingId}` : `${API_URL}/api/contratos`;
     const method = editingId ? 'PUT' : 'POST';
 
     try {
@@ -102,7 +103,7 @@ export const ContratosView = () => {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja apagar este contrato?')) return;
     try {
-      const res = await fetch(`https://sistema-gab-assesp.onrender.com/api/contratos/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/contratos/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setContratos(prev => prev.filter(c => c.id !== id));
       }
