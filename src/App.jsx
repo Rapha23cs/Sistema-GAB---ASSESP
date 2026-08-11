@@ -8,6 +8,7 @@ import { ColaboracaoView } from './pages/ColaboracaoView';
 import { LoginView } from './pages/LoginView';
 import { LandingView } from './pages/LandingView';
 import { DashboardView } from './pages/DashboardView';
+import { AdminUsersView } from './pages/AdminUsersView';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -40,7 +41,8 @@ class ErrorBoundary extends Component {
 
 /* --- MAIN APP --- */
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || 'null'));
   const [showAuthFlow, setShowAuthFlow] = useState(false);
   const [initialAuthMode, setInitialAuthMode] = useState('login');
   const [activeTab, setActiveTab] = useState('Dashboard'); // Starts with Dashboard
@@ -71,7 +73,12 @@ export default function App() {
           />
           {showAuthFlow && (
             <LoginView 
-              onLogin={() => setIsAuthenticated(true)} 
+              onLogin={(userData) => {
+                setUser(userData);
+                setIsAuthenticated(true);
+                setShowAuthFlow(false);
+                setActiveTab('Dashboard');
+              }} 
               onBack={() => setShowAuthFlow(false)}
               initialMode={initialAuthMode}
               isDark={isDark}
@@ -103,7 +110,9 @@ export default function App() {
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {['Dashboard', 'Colaboração', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Configurações'].map((item) => {
+            {[
+              'Dashboard', 'Colaboração', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Usuários', 'Configurações'
+            ].map((item) => {
               const isActive = activeTab === item;
               let IconComponent;
               switch (item) {
@@ -113,6 +122,7 @@ export default function App() {
                 case 'Contratos': IconComponent = Icons.FileSignature; break;
                 case 'Licitações': IconComponent = Icons.Landmark; break;
                 case 'Colaboração': IconComponent = Icons.MessageSquare; break;
+                case 'Usuários': IconComponent = Icons.User; break;
                 case 'Configurações': IconComponent = Icons.Settings; break;
                 default: IconComponent = Icons.Home;
               }
@@ -134,10 +144,10 @@ export default function App() {
           </nav>
 
           <div className="p-4 m-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 flex items-center gap-3 transition-colors duration-500">
-            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User Avatar" className="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-600 shadow-sm" />
+            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nome || 'User')}&background=random`} alt="User Avatar" className="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-600 shadow-sm" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Raphael S.</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Administrador</p>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.nome || 'Usuário'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.role === 'Admin' ? 'Administrador' : 'Usuário'}</p>
             </div>
             <button 
               onClick={() => setIsDark(!isDark)}
@@ -147,7 +157,13 @@ export default function App() {
               {isDark ? <Icons.Sun /> : <Icons.Moon />}
             </button>
             <button 
-              onClick={() => setIsAuthenticated(false)}
+              onClick={() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setIsAuthenticated(false);
+                setUser(null);
+                setActiveTab('Dashboard');
+              }}
               className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-slate-700"
               title="Encerrar sessão"
             >
@@ -190,7 +206,8 @@ export default function App() {
             {activeTab === 'Contratos' && <ContratosView />}
             {activeTab === 'Licitações' && <LicitacoesView />}
             {activeTab === 'Colaboração' && <ColaboracaoView />}
-            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Colaboração') && (
+            {activeTab === 'Usuários' && <AdminUsersView user={user} />}
+            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Colaboração' && activeTab !== 'Usuários') && (
               <div className="flex items-center justify-center h-full text-zinc-500">
                 Módulo "{activeTab}" em desenvolvimento...
               </div>

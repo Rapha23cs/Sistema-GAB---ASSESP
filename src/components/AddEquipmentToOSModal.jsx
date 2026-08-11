@@ -1,3 +1,4 @@
+import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
@@ -11,7 +12,7 @@ export const AddEquipmentToOSModal = ({ order, onCancel, onSave }) => {
   const [equipamentosDb, setEquipamentosDb] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/equipamentos`)
+    apiFetch(`${API_URL}/api/equipamentos`)
       .then(res => res.json())
       .then(data => setEquipamentosDb(data))
       .catch(err => console.error(err));

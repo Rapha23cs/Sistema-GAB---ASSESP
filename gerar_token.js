@@ -14,7 +14,7 @@ fs.readFile(CREDENTIALS_PATH, (err, content) => {
 });
 
 function authorize(credentials, callback) {
-  const {client_secret, client_id} = credentials.web || credentials.installed;
+  const { client_secret, client_id } = credentials.web || credentials.installed;
   const oAuth2Client = new OAuth2Client(client_id, client_secret, REDIRECT_URI);
   callback(oAuth2Client);
 }
@@ -25,7 +25,7 @@ function generateNewToken(oAuth2Client) {
     scope: SCOPES,
     prompt: 'consent'
   });
-  
+
   console.log('\n=============================================================');
   console.log(' ATENÇÃO: ANTES DE ACESSAR O LINK, CONFIGURE O G-CLOUD!');
   console.log('=============================================================');
@@ -44,13 +44,13 @@ function generateNewToken(oAuth2Client) {
       if (req.url.indexOf('/oauth2callback') > -1) {
         const qs = new url.URL(req.url, 'http://localhost:3000').searchParams;
         const code = qs.get('code');
-        
+
         res.end('Autenticacao concluida! Pode fechar esta janela e voltar ao terminal.');
         server.close();
-        
+
         oAuth2Client.getToken(code, (err, token) => {
           if (err) return console.error('❌ Erro ao recuperar o token de acesso.', err);
-          
+
           fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
             if (err) return console.error(err);
             console.log('\n✅ SUCESSO! Token armazenado em', TOKEN_PATH);

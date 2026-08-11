@@ -6,8 +6,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'chave-secreta-padrao-segura-123';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +21,55 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Cache simples em memória para evitar limite do Google Sheets (Erro 429)
+const apiCache = new Map();
+
+function cacheMiddleware(req, res, next) {
+  // Se for uma requisição que altera dados (POST, PUT, DELETE), limpa todo o cache
+  if (req.method !== 'GET') {
+    apiCache.clear();
+    return next();
+  }
+
+  const key = req.originalUrl;
+  const cached = apiCache.get(key);
+  // Usa o cache se tiver menos de 5 segundos (suficiente para agrupar requisições concorrentes da tela)
+  if (cached && (Date.now() - cached.timestamp < 5000)) {
+    return res.json(cached.data);
+  }
+  
+  const originalJson = res.json;
+  res.json = function(body) {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      apiCache.set(key, { timestamp: Date.now(), data: body });
+    }
+    return originalJson.call(res, body);
+  };
+  next();
+}
+
+app.use('/api', cacheMiddleware);
+
+// Middleware de Autenticação JWT
+function authenticateToken(req, res, next) {
+  // Ignora verificação para as rotas públicas de auth
+  if (req.originalUrl === '/api/auth/login' || req.originalUrl === '/api/auth/register') return next();
+
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ error: 'Acesso negado. Token não fornecido.' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token inválido ou expirado.' });
+    req.user = user;
+    next();
+  });
+}
+
+// Aplica o middleware globalmente para todas as rotas (exceto /api/auth que é tratada dentro da função)
+app.use('/api', authenticateToken);
 
 // Google Sheets Config
 const CREDENTIALS_PATH = path.join(__dirname, 'client_secret_302242102864-jddtdmn5hif9a3sr1d8hir5n3rmvn02l.apps.googleusercontent.com.json');
@@ -583,6 +636,155 @@ app.delete('/api/oss/:id', async (req, res) => {
   } catch (error) {
     console.error('Erro DELETE OSs:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+// ==========================================
+// ROTAS DE AUTENTICAÇÃO
+// ==========================================
+
+// Registrar novo usuário
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+    if (!nome || !email || !senha) return res.status(400).json({ error: 'Preencha todos os campos.' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Usuários'];
+    if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+
+    // Verifica se email já existe
+    if (rows.some(r => r.get('Email') === email)) {
+      return res.status(400).json({ error: 'Este email já está em uso.' });
+    }
+
+    // Hash da senha
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(senha, salt);
+
+    // Salva o usuário como pendente
+    await sheet.addRow({
+      'ID': Date.now().toString(),
+      'Nome': nome,
+      'Email': email,
+      'Senha': hashedPassword,
+      'Status': 'Pendente',
+      'Role': 'Usuario',
+      'DataCadastro': new Date().toISOString()
+    });
+
+    res.json({ message: 'Cadastro realizado com sucesso. Aguardando aprovação do administrador.' });
+  } catch (error) {
+    console.error('Erro no registro:', error);
+    res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+    if (!email || !senha) return res.status(400).json({ error: 'Preencha todos os campos.' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Usuários'];
+    if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+
+    const userRow = rows.find(r => r.get('Email') === email);
+    if (!userRow) return res.status(401).json({ error: 'Credenciais inválidas.' });
+
+    const isValidPassword = await bcrypt.compare(senha, userRow.get('Senha'));
+    if (!isValidPassword) return res.status(401).json({ error: 'Credenciais inválidas.' });
+
+    if (userRow.get('Status') !== 'Aprovado') {
+      return res.status(403).json({ error: 'Sua conta ainda não foi aprovada pelo administrador.' });
+    }
+
+    // Gerar JWT
+    const token = jwt.sign(
+      { id: userRow.get('ID'), email: userRow.get('Email'), role: userRow.get('Role'), nome: userRow.get('Nome') },
+      JWT_SECRET,
+      { expiresIn: '7d' } // Expira em 7 dias
+    );
+
+    res.json({ token, user: { nome: userRow.get('Nome'), email: userRow.get('Email'), role: userRow.get('Role') } });
+  } catch (error) {
+    console.error('Erro no login:', error);
+    res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
+});
+
+// Obter usuários (Todos os usuários logados podem ver)
+app.get('/api/auth/users', async (req, res) => {
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Usuários'];
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+
+    const users = rows.map(r => ({
+      id: r.get('ID'),
+      nome: r.get('Nome'),
+      email: r.get('Email'),
+      status: r.get('Status'),
+      role: r.get('Role'),
+      dataCadastro: r.get('DataCadastro')
+    }));
+
+    res.json(users);
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
+});
+
+// Aprovar usuário (Apenas admin)
+app.put('/api/auth/users/:id/approve', async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Acesso negado.' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Usuários'];
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+
+    const userRow = rows.find(r => r.get('ID') === req.params.id);
+    if (!userRow) return res.status(404).json({ error: 'Usuário não encontrado.' });
+
+    userRow.set('Status', 'Aprovado');
+    await userRow.save();
+
+    res.json({ message: 'Usuário aprovado com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao aprovar usuário:', error);
+    res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
+});
+
+// Deletar usuário (Apenas admin)
+app.delete('/api/auth/users/:id', async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Acesso negado.' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Usuários'];
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+
+    const userRow = rows.find(r => r.get('ID') === req.params.id);
+    if (!userRow) return res.status(404).json({ error: 'Usuário não encontrado.' });
+
+    await userRow.delete();
+
+    res.json({ message: 'Usuário excluído com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao deletar usuário:', error);
+    res.status(500).json({ error: 'Erro interno no servidor.' });
   }
 });
 

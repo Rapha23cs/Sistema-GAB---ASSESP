@@ -1,3 +1,4 @@
+import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
@@ -24,7 +25,7 @@ export const ContratosView = () => {
 
   const fetchContratos = () => {
     setIsLoading(true);
-    fetch(`${API_URL}/api/contratos?t=${Date.now()}`)
+    apiFetch(`${API_URL}/api/contratos?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -75,7 +76,7 @@ export const ContratosView = () => {
     const method = editingId ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -103,7 +104,7 @@ export const ContratosView = () => {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja apagar este contrato?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/contratos/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${API_URL}/api/contratos/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setContratos(prev => prev.filter(c => c.id !== id));
       }

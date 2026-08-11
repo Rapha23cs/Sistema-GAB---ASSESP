@@ -14,20 +14,50 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
   const [regPassword, setRegPassword] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate network request
-    setTimeout(() => {
-      setIsLoading(false);
+    setError('');
+    setSuccess('');
+    
+    try {
       if (isLogin) {
-        onLogin();
+        const response = await fetch(`${import.meta.env.PROD ? 'https://sistema-gab-assesp.onrender.com' : 'http://localhost:3001'}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha: password })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erro ao fazer login');
+        
+        // Save token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        onLogin(data.user);
       } else {
-        // Mock registration success, switch to login or auto-login
-        onLogin();
+        // Register
+        const response = await fetch(`${import.meta.env.PROD ? 'https://sistema-gab-assesp.onrender.com' : 'http://localhost:3001'}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: name, email: regEmail, senha: regPassword })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erro ao criar conta');
+        
+        setSuccess(data.message);
+        setTimeout(() => setIsLogin(true), 3000); // Switch to login after 3 seconds
       }
-    }, 1200);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const theme = {
@@ -92,6 +122,18 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {error && (
+            <div className="p-3 mb-4 rounded-xl text-sm bg-rose-50 border border-rose-200 text-rose-600 dark:bg-rose-900/20 dark:border-rose-900/50 dark:text-rose-400">
+              {error}
+            </div>
+          )}
+          
+          {success && (
+            <div className="p-3 mb-4 rounded-xl text-sm bg-emerald-50 border border-emerald-200 text-emerald-600 dark:bg-emerald-900/20 dark:border-emerald-900/50 dark:text-emerald-400">
+              {success}
+            </div>
+          )}
           
           {/* Registration specific fields */}
           {!isLogin && (

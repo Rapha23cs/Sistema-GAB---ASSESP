@@ -1,3 +1,4 @@
+import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
@@ -19,12 +20,12 @@ export const EquipmentsView = () => {
 
   const fetchData = () => {
     setIsLoading(true);
-    fetch(`${API_URL}/api/contratos`)
+    apiFetch(`${API_URL}/api/contratos`)
       .then(res => res.json())
       .then(data => setContratosDb(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
       
-    fetch(`${API_URL}/api/equipamentos`)
+    apiFetch(`${API_URL}/api/equipamentos`)
       .then(res => res.json())
       .then(data => {
         setEquipamentos(Array.isArray(data) ? data : []);
@@ -86,7 +87,7 @@ export const EquipmentsView = () => {
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newEqData)
@@ -113,7 +114,7 @@ export const EquipmentsView = () => {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja apagar este equipamento?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/equipamentos/${id}?categoria=${encodeURIComponent(categoria)}`, { method: 'DELETE' });
+      const res = await apiFetch(`${API_URL}/api/equipamentos/${id}?categoria=${encodeURIComponent(categoria)}`, { method: 'DELETE' });
       if (res.ok) {
         setEquipamentos(prev => prev.filter(eq => !(eq.id === id && eq.categoria === categoria)));
       }
