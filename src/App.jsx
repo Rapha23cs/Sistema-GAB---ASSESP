@@ -200,12 +200,12 @@ export default function App() {
 
           {/* Dynamic View Rendering based on active tab */}
           <div className="p-8 flex-1 z-0 relative">
-            {activeTab === 'Dashboard' && <DashboardView />}
+            {activeTab === 'Dashboard' && <DashboardView user={user} />}
             {activeTab === 'Ordens' && <OrdersView />}
             {activeTab === 'Equipamentos' && <EquipmentsView />}
             {activeTab === 'Contratos' && <ContratosView />}
             {activeTab === 'Licitações' && <LicitacoesView />}
-            {activeTab === 'Colaboração' && <ColaboracaoView />}
+            {activeTab === 'Colaboração' && <ColaboracaoView user={user} />}
             {activeTab === 'Usuários' && <AdminUsersView user={user} />}
             {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Colaboração' && activeTab !== 'Usuários') && (
               <div className="flex items-center justify-center h-full text-zinc-500">

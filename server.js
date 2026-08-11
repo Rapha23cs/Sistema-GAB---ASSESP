@@ -147,7 +147,8 @@ app.get('/api/contratos', async (req, res) => {
         status_licitacao: row.get('STATUS do Proc. Licitatório'),
         localizacao: row.get('LOCALIZAÇÃO'),
         consulta: row.get('CONSULTA'),
-        responsavel: row.get('RESPONSÁVEL')
+        responsavel: row.get('RESPONSÁVEL'),
+        status: row.get('STATUS')
       }));
 
     // Inverte a ordem para os mais recentes (últimas linhas da planilha) aparecerem primeiro
@@ -184,7 +185,8 @@ app.post('/api/contratos', async (req, res) => {
       'STATUS do Proc. Licitatório': data.status_licitacao || '',
       'LOCALIZAÇÃO': data.localizacao || '',
       'CONSULTA': data.consulta || '',
-      'RESPONSÁVEL': data.responsavel || ''
+      'RESPONSÁVEL': data.responsavel || '',
+      'STATUS': data.status || ''
     });
 
     const contrato = { ...data, id: newRow.rowNumber };
@@ -222,12 +224,13 @@ app.put('/api/contratos/:id', async (req, res) => {
       'QUANTIDADE': data.quantidade || '',
       'EXECUÇÃO': data.execucao || '',
       'PENDÊNCIA (saldo)': data.pendencia || '',
-      'PRAZO DE ENTREGA (previsão)': data.prazo_entrega || '',
-      'STATUS do Proc. Licitatório': data.status_licitacao || '',
-      'LOCALIZAÇÃO': data.localizacao || '',
-      'CONSULTA': data.consulta || '',
-      'RESPONSÁVEL': data.responsavel || ''
+      'PRAZO DE ENTREGA (previsão)': data.prazo_entrega || ''
     });
+    rowToUpdate.set('STATUS do Proc. Licitatório', data.status_licitacao || '');
+    rowToUpdate.set('LOCALIZAÇÃO', data.localizacao || '');
+    rowToUpdate.set('CONSULTA', data.consulta || '');
+    rowToUpdate.set('RESPONSÁVEL', data.responsavel || '');
+    rowToUpdate.set('STATUS', data.status || '');
 
     await rowToUpdate.save();
 
@@ -638,6 +641,69 @@ app.delete('/api/oss/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// ==========================================
+// ROTAS DE TAREFAS (COLABORAÇÃO)
+// ==========================================
+
+app.get('/api/tarefas', async (req, res) => {
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Tarefas'];
+    if (!sheet) return res.status(404).json({ error: 'Aba Tarefas não encontrada' });
+    const rows = await sheet.getRows();
+    const tarefas = rows.map(r => ({
+      id: r.get('ID'),
+      rowNumber: r.rowNumber,
+      text: r.get('Descrição'),
+      author: r.get('Autor'),
+      assignee: r.get('Atribuído'),
+      date: r.get('DataCadastro'),
+      status: r.get('Status'),
+      completed: r.get('Status') === 'Concluída',
+      priority: r.get('Prioridade')
+    }));
+    res.json(tarefas.reverse());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/tarefas', async (req, res) => {
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Tarefas'];
+    const novaTarefa = req.body;
+    await sheet.addRow({
+      'ID': novaTarefa.id,
+      'Descrição': novaTarefa.text,
+      'Autor': novaTarefa.author,
+      'Atribuído': novaTarefa.assignee,
+      'DataCadastro': novaTarefa.date,
+      'Status': 'Pendente',
+      'Prioridade': novaTarefa.priority
+    });
+    res.json({ message: 'Tarefa adicionada' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/tarefas/:rowNumber', async (req, res) => {
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Tarefas'];
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.rowNumber === parseInt(req.params.rowNumber));
+    if (!row) return res.status(404).json({ error: 'Tarefa não encontrada' });
+    
+    row.set('Status', req.body.completed ? 'Concluída' : 'Pendente');
+    await row.save();
+    res.json({ message: 'Status atualizado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // ROTAS DE AUTENTICAÇÃO
 // ==========================================

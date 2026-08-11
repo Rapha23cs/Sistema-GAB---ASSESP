@@ -12,6 +12,7 @@ export const ContratosView = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterResponsavel, setFilterResponsavel] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Todos');
 
   // CRUD State
   const initialFormState = {
@@ -50,6 +51,7 @@ export const ContratosView = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setFilterResponsavel('');
+    setStatusFilter('Todos');
   };
 
   const toggleRow = (id) => setExpandedRow(expandedRow === id ? null : id);
@@ -60,7 +62,11 @@ export const ContratosView = () => {
       (contract.objeto && contract.objeto.toLowerCase().includes(searchTerm.toLowerCase()));
     const responsavelMatch = !filterResponsavel ||
       (contract.responsavel && contract.responsavel === filterResponsavel);
-    return searchMatch && responsavelMatch;
+      
+    const cStatus = (contract.status || '').toUpperCase().trim();
+    const statusMatch = statusFilter === 'Todos' || cStatus === statusFilter;
+
+    return searchMatch && responsavelMatch && statusMatch;
   });
 
   const responsaveis = [...new Set(contratos.map(c => c.responsavel).filter(Boolean))];
@@ -135,9 +141,9 @@ export const ContratosView = () => {
     return parseFloat(clean) || 0;
   };
 
-  const totalContratos = contratos.length;
+  const totalContratos = filteredContratos.length;
 
-  const totalValue = contratos.reduce((sum, c) => sum + parseCurrency(c.valor_global), 0);
+  const totalValue = filteredContratos.reduce((sum, c) => sum + parseCurrency(c.valor_global), 0);
   const formattedTotalValue = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -145,13 +151,13 @@ export const ContratosView = () => {
     maximumFractionDigits: 1
   }).format(totalValue);
 
-  const contratosAtivos = contratos.filter(c => {
+  const contratosAtivos = filteredContratos.filter(c => {
     const p = (c.pendencia || '').toLowerCase();
     const v = (c.vigencia || '').toLowerCase();
     return !p.includes('finalizado') && !v.includes('finalizado');
   }).length;
 
-  const aVencer90dias = contratos.filter(c => {
+  const aVencer90dias = filteredContratos.filter(c => {
     const dates = (c.vigencia || '').match(/\d{2}\/\d{2}\/\d{4}/g);
     if (dates && dates.length > 0) {
       const lastDateStr = dates[dates.length - 1];
@@ -188,10 +194,33 @@ export const ContratosView = () => {
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Icons.FileSignature /> Gestão de Contratos
           </h2>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            
+            {/* Status Filter Cards */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mr-2 shadow-inner h-10">
+              <button
+                onClick={() => setStatusFilter('Todos')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${statusFilter === 'Todos' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                TODOS
+              </button>
+              <button
+                onClick={() => setStatusFilter('ATIVO')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${statusFilter === 'ATIVO' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'}`}
+              >
+                ATIVOS
+              </button>
+              <button
+                onClick={() => setStatusFilter('FINALIZADO')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${statusFilter === 'FINALIZADO' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-rose-600 dark:hover:text-rose-400'}`}
+              >
+                FINALIZADOS
+              </button>
+            </div>
+
             <button
               onClick={fetchContratos}
-              className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center gap-2 cursor-pointer"
+              className="px-4 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
               title="Atualizar Dados"
             >
               <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />

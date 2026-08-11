@@ -37,7 +37,7 @@ const getStatusGrouped = (ossArray) => {
   return groupedOrders;
 };
 
-export const DashboardView = () => {
+export const DashboardView = ({ user }) => {
   const pendingTasks = DUMMY_TASKS.filter(t => t.assignee === 'Raphael S.' && !t.completed);
 
   const [modalState, setModalState] = useState({ isOpen: false, type: null });
@@ -118,7 +118,19 @@ export const DashboardView = () => {
     return acc;
   }, {});
 
-  const recentesOS = [...groupedOS].reverse().slice(0, 4).map(o => ({
+  const parseDateBr = (dStr) => {
+    if (!dStr) return 0;
+    const parts = dStr.split('/');
+    if (parts.length === 3) {
+      return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    }
+    return 0;
+  };
+
+  const recentesOS = [...groupedOS]
+    .sort((a, b) => parseDateBr(b.data_tarefa) - parseDateBr(a.data_tarefa))
+    .slice(0, 4)
+    .map(o => ({
     title: `OS ${o.ordem_servico || 'Nova'} ${o.statusGlobal === 'concluido' ? 'Concluída' : 'Atualizada'}`,
     desc: `A ordem de serviço teve movimentação.`,
     time: o.data_tarefa ? o.data_tarefa : 'Recente',
@@ -142,7 +154,7 @@ export const DashboardView = () => {
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao Sistema Gab, Raphael!</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao Sistema Gab, {user?.nome?.split(' ')[0] || 'Usuário'}!</h2>
             <p className="text-blue-100 dark:text-blue-200 text-sm max-w-2xl">
               Aqui está o resumo operacional das suas unidades hoje. Você tem <strong className="text-white font-semibold">{osEmAndamento} Ordens de Serviço</strong> em andamento e <strong className="text-amber-300 font-semibold">{contratosAVencer} Contrato{contratosAVencer !== 1 ? 's' : ''}</strong> vencendo nos próximos 90 dias.
             </p>
