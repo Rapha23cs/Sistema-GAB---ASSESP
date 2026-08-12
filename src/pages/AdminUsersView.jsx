@@ -34,7 +34,7 @@ export const AdminUsersView = ({ user }) => {
         method: 'PUT'
       });
       if (!res.ok) throw new Error('Erro ao aprovar usuário');
-      
+
       // Update state locally
       setUsers(users.map(u => u.id === userId ? { ...u, status: 'Aprovado' } : u));
     } catch (err) {
@@ -46,14 +46,14 @@ export const AdminUsersView = ({ user }) => {
 
   const handleDelete = async (userId) => {
     if (!window.confirm('Tem certeza que deseja excluir permanentemente este usuário?')) return;
-    
+
     try {
       setActionLoading(userId);
       const res = await apiFetch(`${API_URL}/api/auth/users/${userId}`, {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Erro ao excluir usuário');
-      
+
       setUsers(users.filter(u => u.id !== userId));
     } catch (err) {
       alert(err.message);

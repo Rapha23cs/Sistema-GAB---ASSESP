@@ -7,6 +7,8 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
   // Login State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   
   // Register State
   const [name, setName] = useState('');
@@ -34,9 +36,14 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Erro ao fazer login');
         
-        // Save token and user info
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Save token and user info based on rememberMe
+        if (rememberMe) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        } else {
+          sessionStorage.setItem('token', data.token);
+          sessionStorage.setItem('user', JSON.stringify(data.user));
+        }
         
         onLogin(data.user);
       } else {
@@ -169,11 +176,15 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
 
           {/* Password Input */}
           <div className="relative group animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${theme.icon}`}>
-              <Icons.Eye />
-            </div>
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className={`absolute inset-y-0 left-0 pl-4 flex items-center transition-colors cursor-pointer hover:opacity-80 ${theme.icon}`}
+            >
+              {showPassword ? <Icons.EyeOff /> : <Icons.Eye />}
+            </button>
             <input 
-              type="password" 
+              type={showPassword ? "text" : "password"}
               value={isLogin ? password : regPassword}
               onChange={(e) => isLogin ? setPassword(e.target.value) : setRegPassword(e.target.value)}
               placeholder={isLogin ? "Sua senha" : "Crie uma senha forte"} 
@@ -185,7 +196,12 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
           {isLogin && (
             <div className="flex items-center justify-between text-sm pt-2 animate-in fade-in duration-500">
               <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-gab-gold focus:ring-gab-gold/50 focus:ring-offset-slate-900" />
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-gab-gold focus:ring-gab-gold/50 focus:ring-offset-slate-900" 
+                />
                 <span className={`transition-colors ${isDark ? 'text-slate-400 group-hover:text-slate-300' : 'text-slate-500 group-hover:text-gab-dark'}`}>Lembrar de mim</span>
               </label>
               <button type="button" className={`font-medium transition-colors ${theme.link}`}>Esqueci a senha</button>

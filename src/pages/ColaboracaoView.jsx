@@ -17,7 +17,7 @@ export const ColaboracaoView = ({ user }) => {
       if (res.ok) {
         const users = await res.json();
         // Filtra apenas os usuários aprovados
-        setActiveUsers(users.filter(u => u.status === 'aprovado'));
+        setActiveUsers(users.filter(u => u.status?.toLowerCase() === 'aprovado'));
       }
     } catch (err) {
       console.error('Erro ao buscar usuários', err);
@@ -141,11 +141,9 @@ export const ColaboracaoView = ({ user }) => {
                   className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
                 >
                   <option value="" disabled>Atribuir para...</option>
-                  <option value="Todos">Todos</option>
                   {activeUsers.filter(u => u.nome !== user?.nome).map(u => (
                     <option key={u.id} value={u.nome}>{u.nome}</option>
                   ))}
-                  <option value="Equipe de Manutenção">Equipe de Manutenção</option>
                 </select>
 
                 <select 

@@ -3,7 +3,7 @@ export const API_URL = import.meta.env.PROD
   : 'http://localhost:3001';
 
 export const apiFetch = async (url, options = {}) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {})

@@ -41,8 +41,8 @@ class ErrorBoundary extends Component {
 
 /* --- MAIN APP --- */
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || 'null'));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!(localStorage.getItem('token') || sessionStorage.getItem('token')));
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null'));
   const [showAuthFlow, setShowAuthFlow] = useState(false);
   const [initialAuthMode, setInitialAuthMode] = useState('login');
   const [activeTab, setActiveTab] = useState('Dashboard'); // Starts with Dashboard
@@ -160,6 +160,8 @@ export default function App() {
               onClick={() => {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
                 setIsAuthenticated(false);
                 setUser(null);
                 setActiveTab('Dashboard');

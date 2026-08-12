@@ -146,8 +146,8 @@ export const EquipmentsView = () => {
     const statusVal = (eq.status || '').toLowerCase();
     if (filterStatus === 'Operante') {
       matchStatus = statusVal.includes('funcionando') || statusVal === 'operante';
-    } else if (filterStatus === 'Em Manutenção') {
-      matchStatus = statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
+    } else if (filterStatus === 'Funcionando com Pendência') {
+      matchStatus = statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
     } else if (filterStatus === 'Inoperante') {
       matchStatus = statusVal.includes('inoperante') || statusVal.includes('condenado');
     }
@@ -171,9 +171,9 @@ export const EquipmentsView = () => {
     return status.includes('funcionando') || status === 'operante';
   }).length;
   
-  const emManutencao = filteredEquipments.filter(e => {
+  const funcionandoComPendencia = filteredEquipments.filter(e => {
     const status = (e.status || '').toLowerCase();
-    return status.includes('análise') || status.includes('avaliação') || status === 'em manutenção' || status === 'em manutencao';
+    return status.includes('análise') || status.includes('avaliação') || status.includes('pendência') || status.includes('pendencia') || status === 'em manutenção' || status === 'em manutencao';
   }).length;
   
   const inoperantes = filteredEquipments.filter(e => {
@@ -188,7 +188,7 @@ export const EquipmentsView = () => {
         {[
           { label: 'Total de Equipamentos', value: totalEquipments, color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
           { label: 'Operantes', value: operantes, color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Em Manutenção', value: emManutencao, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: 'Funcionando com Pendência', value: funcionandoComPendencia, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
           { label: 'Inoperantes', value: inoperantes, color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
         ].map((stat, i) => (
           <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-default group`}>
@@ -262,7 +262,7 @@ export const EquipmentsView = () => {
             >
               <option value="Todos">Todos os Status</option>
               <option value="Operante">Operantes</option>
-              <option value="Em Manutenção">Em Manutenção</option>
+              <option value="Funcionando com Pendência">Funcionando com Pendência</option>
               <option value="Inoperante">Inoperantes</option>
             </select>
             {(searchTerm || filterType !== 'Todos' || filterContract !== 'Todos' || filterStatus !== 'Todos') && (
@@ -461,8 +461,8 @@ export const EquipmentsView = () => {
                   <select name="status" value={newEqData.status} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
                     <option value="">Selecione...</option>
                     <option value="Operante">Operante</option>
+                    <option value="Funcionando com Pendência">Funcionando com Pendência</option>
                     <option value="Inoperante">Inoperante</option>
-                    <option value="Em Manutenção">Em Manutenção</option>
                   </select>
                 </div>
                 

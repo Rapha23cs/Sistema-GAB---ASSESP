@@ -2,7 +2,6 @@ import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
-import { DUMMY_TASKS } from '../data/mockData';
 
 const norm = str => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
@@ -38,24 +37,25 @@ const getStatusGrouped = (ossArray) => {
 };
 
 export const DashboardView = ({ user }) => {
-  const pendingTasks = DUMMY_TASKS.filter(t => t.assignee === 'Raphael S.' && !t.completed);
-
   const [modalState, setModalState] = useState({ isOpen: false, type: null });
 
   const [oss, setOss] = useState([]);
   const [contratos, setContratos] = useState([]);
   const [equipamentos, setEquipamentos] = useState([]);
+  const [tarefas, setTarefas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       apiFetch(`${API_URL}/api/oss`).then(res => res.json()),
       apiFetch(`${API_URL}/api/contratos`).then(res => res.json()),
-      apiFetch(`${API_URL}/api/equipamentos`).then(res => res.json())
-    ]).then(([ossData, contratosData, equipamentosData]) => {
+      apiFetch(`${API_URL}/api/equipamentos`).then(res => res.json()),
+      apiFetch(`${API_URL}/api/tarefas`).then(res => res.json())
+    ]).then(([ossData, contratosData, equipamentosData, tarefasData]) => {
       setOss(Array.isArray(ossData) ? ossData : []);
       setContratos(Array.isArray(contratosData) ? contratosData : []);
       setEquipamentos(Array.isArray(equipamentosData) ? equipamentosData : []);
+      setTarefas(Array.isArray(tarefasData) ? tarefasData : []);
       setLoading(false);
     }).catch(err => {
       console.error(err);
@@ -91,6 +91,15 @@ export const DashboardView = ({ user }) => {
     return false;
   });
   const contratosAVencer = contratosVencendoList.length;
+
+  const eqAgAprovacao = equipamentos.filter(e => {
+    const s = norm(e.status);
+    return s.includes('aguardando aprovação') || s.includes('ag. aprovação');
+  });
+
+  const pendingTasks = tarefas.filter(t => 
+    (t.assignee === user?.nome || t.assignee === 'Todos') && !t.completed
+  );
 
   const eqInoperantes = equipamentos.filter(e => {
     const s = norm(e.status);
