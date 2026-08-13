@@ -5,14 +5,37 @@ import { Icons } from '../components/Icons';
 
 const norm = str => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
+const parseDateOutside = (dStr) => {
+  if (!dStr) return 0;
+  let str = dStr.trim().split(' ')[0];
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+  } else if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+  }
+  return 0;
+};
+
 const getStatusGrouped = (ossArray) => {
   const groupedMap = new Map();
   ossArray.forEach(os => {
     const key = os.ordem_servico || `sem-os-${os.id}`;
     if (!groupedMap.has(key)) {
-      groupedMap.set(key, { ...os, statusCount: [] });
+      groupedMap.set(key, { ...os, statusCount: [], maxDate: 0 });
     }
     const group = groupedMap.get(key);
+    
+    const tDate = parseDateOutside(os.data_tarefa);
+    const trDate = parseDateOutside(os.data_tratativa);
+    const rowMax = Math.max(tDate, trDate);
+    
+    if (rowMax > group.maxDate) {
+      group.maxDate = rowMax;
+      group.latestDateStr = tDate >= trDate ? os.data_tarefa : os.data_tratativa;
+    }
+
     if (os.status) {
       group.statusCount.push(norm(os.status));
     }
@@ -20,6 +43,9 @@ const getStatusGrouped = (ossArray) => {
 
   const groupedOrders = Array.from(groupedMap.values());
   groupedOrders.forEach(go => {
+    if (go.latestDateStr) {
+      go.data_tarefa = go.latestDateStr;
+    }
     if (go.statusCount.length > 0) {
       if (go.statusCount.every(s => s.includes('conclu') || s === 'ok')) {
         go.statusGlobal = 'concluido';
@@ -32,7 +58,6 @@ const getStatusGrouped = (ossArray) => {
       go.statusGlobal = 'pendente';
     }
   });
-
   return groupedOrders;
 };
 
@@ -43,6 +68,7 @@ export const DashboardView = ({ user }) => {
   const [contratos, setContratos] = useState([]);
   const [equipamentos, setEquipamentos] = useState([]);
   const [tarefas, setTarefas] = useState([]);
+  const [licitacoes, setLicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,12 +76,14 @@ export const DashboardView = ({ user }) => {
       apiFetch(`${API_URL}/api/oss`).then(res => res.json()),
       apiFetch(`${API_URL}/api/contratos`).then(res => res.json()),
       apiFetch(`${API_URL}/api/equipamentos`).then(res => res.json()),
-      apiFetch(`${API_URL}/api/tarefas`).then(res => res.json())
-    ]).then(([ossData, contratosData, equipamentosData, tarefasData]) => {
+      apiFetch(`${API_URL}/api/tarefas`).then(res => res.json()),
+      apiFetch(`${API_URL}/api/licitacoes`).then(res => res.json())
+    ]).then(([ossData, contratosData, equipamentosData, tarefasData, licitacoesData]) => {
       setOss(Array.isArray(ossData) ? ossData : []);
       setContratos(Array.isArray(contratosData) ? contratosData : []);
       setEquipamentos(Array.isArray(equipamentosData) ? equipamentosData : []);
       setTarefas(Array.isArray(tarefasData) ? tarefasData : []);
+      setLicitacoes(Array.isArray(licitacoesData) ? licitacoesData : []);
       setLoading(false);
     }).catch(err => {
       console.error(err);
@@ -105,6 +133,11 @@ export const DashboardView = ({ user }) => {
     const s = norm(e.status);
     return s.includes('inoperante') || s.includes('condenado');
   });
+  
+  const licitacoesAbertas = licitacoes.filter(l => {
+    const s = norm(l.status);
+    return !s.includes('conclui') && !s.includes('finaliz');
+  }).length;
   const eqEmManutencao = equipamentos.filter(e => {
     const s = norm(e.status);
     return s.includes('análise') || s.includes('avaliação') || s.includes('manutencao');
@@ -128,12 +161,17 @@ export const DashboardView = ({ user }) => {
   }, {});
 
   const parseDateBr = (dStr) => {
-    if (!dStr) return 0;
-    const parts = dStr.split('/');
-    if (parts.length === 3) {
-      return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    return parseDateOutside(dStr);
+  };
+
+  const formatDateDisplay = (dStr) => {
+    if (!dStr) return '';
+    let str = dStr.trim().split(' ')[0];
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
-    return 0;
+    return str;
   };
 
   const recentesOS = [...groupedOS]
@@ -142,7 +180,7 @@ export const DashboardView = ({ user }) => {
     .map(o => ({
     title: `OS ${o.ordem_servico || 'Nova'} ${o.statusGlobal === 'concluido' ? 'Concluída' : 'Atualizada'}`,
     desc: `A ordem de serviço teve movimentação.`,
-    time: o.data_tarefa ? o.data_tarefa : 'Recente',
+    time: o.data_tarefa ? formatDateDisplay(o.data_tarefa) : 'Recente',
     Icon: o.statusGlobal === 'concluido' ? Icons.CheckCircle : Icons.Wrench,
     color: o.statusGlobal === 'concluido' ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400',
     bg: o.statusGlobal === 'concluido' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50'
@@ -180,8 +218,8 @@ export const DashboardView = ({ user }) => {
         {[
           { label: 'OS em Andamento', value: osEmAndamento.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-blue-600 dark:text-blue-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Briefcase, trend: 'Ativas', trendColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800/50' },
           { label: 'Equipamentos Inoperantes', value: equipamentosInoperantes.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Monitor, trend: 'Atenção', trendColor: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800/50' },
-          { label: 'Contratos Ativos', value: contratosAtivos.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.FileSignature, trend: 'Vigentes', trendColor: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700' },
-          { label: 'Licitações Abertas', value: '15', color: 'bg-white dark:bg-slate-900', text: 'text-purple-600 dark:text-purple-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Landmark, trend: 'Mockado', trendColor: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800/50' },
+          { label: 'Contratos Vigentes', value: contratosAtivos.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.FileSignature, trend: 'Ativos', trendColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' },
+          { label: 'Licitações Abertas', value: licitacoesAbertas.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-purple-600 dark:text-purple-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Landmark, trend: 'Em Curso', trendColor: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800/50' },
         ].map((stat, i) => (
           <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-all duration-300 cursor-default group relative overflow-hidden`}>
             <div className="absolute -right-4 -top-4 opacity-[0.03] dark:opacity-10 text-slate-900 dark:text-white transform group-hover:scale-110 transition-transform duration-500">
