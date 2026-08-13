@@ -23,6 +23,7 @@ export const OrdersView = () => {
   const [filterType, setFilterType] = useState('Todos');
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [filterContract, setFilterContract] = useState('Todos');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [contratosDb, setContratosDb] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,6 +105,9 @@ export const OrdersView = () => {
   };
 
   const clearFilters = () => {
+    setFilterType('Todos');
+    setFilterStatus('Todos');
+    setFilterContract('Todos');
     setSearchTerm('');
   };
 
@@ -384,6 +388,17 @@ export const OrdersView = () => {
       if (contractStr !== fContractStr) return false;
     }
     
+    if (searchTerm) {
+      const search = norm(searchTerm);
+      const searchString = norm([
+        order.ordem_servico,
+        order.tarefa,
+        order.unidade_prisional_setor,
+        order.equipamentos?.map(e => `${e.equipamento} ${e.numero_serie} ${e.modelo}`).join(' ')
+      ].filter(Boolean).join(' '));
+      if (!searchString.includes(search)) return false;
+    }
+    
     return true;
   });
 
@@ -482,12 +497,27 @@ export const OrdersView = () => {
               <option value="N° 002/2024 - VMI">N° 002/2024 - VMI</option>
               <option value="N° 056/2026 - TECHSCAN">N° 056/2026 - TECHSCAN</option>
             </select>
-            {(filterType !== 'Todos' || filterStatus !== 'Todos' || filterContract !== 'Todos') && (
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Icons.Search className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar OS, equipamento, unidade..."
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+            </div>
+            {(filterType !== 'Todos' || filterStatus !== 'Todos' || filterContract !== 'Todos' || searchTerm !== '') && (
               <button
                 onClick={() => {
                   setFilterType('Todos');
                   setFilterStatus('Todos');
                   setFilterContract('Todos');
+                  setSearchTerm('');
                 }}
                 className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
                 title="Limpar Filtros"

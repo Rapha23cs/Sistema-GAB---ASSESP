@@ -40,13 +40,13 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
           </div>
           <div className="flex flex-col justify-center">
             <span className={`text-2xl font-serif font-bold tracking-widest leading-none mb-1 ${theme.logoText}`}>
-              GAB — ASSESP
+              Gestão Contratual
             </span>
             <span className={`text-[10px] font-bold tracking-[0.2em] leading-none mb-0.5 ${theme.logoSubtitle}`}>
-              SETOR JURÍDICO | PPMA
+              GAB - ASSESP | PPMA
             </span>
             <span className={`text-[8px] tracking-widest uppercase leading-none ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Gabinete da Assessoria Especial
+              ASSESSORIA ESPECIAL
             </span>
           </div>
         </div>
@@ -90,7 +90,7 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
         <h1 className={`text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 transition-colors duration-500 ${theme.title}`}>
           Excelência em <br className="hidden md:block" />
           <span className={theme.titleHighlight}>
-            Administração Legal
+            Assessoramento Jurídico
           </span>
         </h1>
 
