@@ -316,7 +316,15 @@ export const EquipmentsView = () => {
                           <div className="text-xs text-slate-500 mt-1 ml-5">{eq.localidade || '-'}</div>
                         </td>
                         <td className="px-6 py-4"><ContractBadge status={eq.cobertura_contrato} /></td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">{eq.ordem_servico || '-'}</td>
+                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
+                          {eq.ordem_servico && eq.ordem_servico.trim() !== '-' ? (
+                            <span className="inline-block px-2.5 py-1.5 text-xs font-mono font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-sm">
+                              {eq.ordem_servico}
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td className="px-6 py-4"><EqStatusBadge status={eq.status} /></td>
                       </tr>
 
@@ -326,22 +334,22 @@ export const EquipmentsView = () => {
                           <td colSpan="7" className="p-0 border-b border-slate-200 dark:border-slate-800">
                             <div className="px-16 py-8">
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {/* Contrato Vinculado */}
+                                {/* Contrato */}
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2 flex items-center gap-2">
-                                    <Icons.FileSignature className="w-4 h-4" /> Cobertura de Contrato
+                                    <Icons.FileSignature className="w-4 h-4" /> Contrato
                                   </p>
                                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    {eq.cobertura_contrato || '-'}
+                                    {eq.contrato || '-'}
                                   </p>
                                 </div>
-                                {/* SEI / Ordem Serviço */}
+                                {/* Data de Garantia */}
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2 flex items-center gap-2">
-                                    <Icons.FileText className="w-4 h-4" /> Ordem de Serviço (atual)
+                                    <Icons.Calendar className="w-4 h-4" /> Data de Garantia
                                   </p>
-                                  <p className="text-sm font-mono font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/30 shadow-sm">
-                                    {eq.ordem_servico || '-'}
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    {eq.data_garantia || 'Não se aplica'}
                                   </p>
                                 </div>
                                 {/* Informações/Pendências */}

@@ -311,6 +311,8 @@ app.get('/api/equipamentos', async (req, res) => {
             categoria: conf.category,
             sheetTitle: conf.title,
             cobertura_contrato: row.get('COBERTURA DE CONTRATO'),
+            contrato: row.get('CONTRATO'),
+            data_garantia: row.get('DATA DA GARANTIA') || row.get('DATA DE GARANTIA'),
             localidade: row.get('LOCALIDADE'),
             equipamento: row.get('EQUIPAMENTO'),
             unidade: row.get('UNIDADE'),
