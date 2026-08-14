@@ -38,9 +38,9 @@ function cacheMiddleware(req, res, next) {
   if (cached && (Date.now() - cached.timestamp < 5000)) {
     return res.json(cached.data);
   }
-  
+
   const originalJson = res.json;
-  res.json = function(body) {
+  res.json = function (body) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       apiCache.set(key, { timestamp: Date.now(), data: body });
     }
@@ -111,10 +111,10 @@ async function getDoc() {
 
   const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, oAuth2Client);
   await doc.loadInfo();
-  
+
   cachedDoc = doc;
   lastDocLoad = Date.now();
-  
+
   return doc;
 }
 
@@ -279,14 +279,14 @@ async function updateEquipmentStatus(doc, categoria, numeroSerie, newStatus) {
   if (!numeroSerie) return;
   const conf = EQUIP_SHEETS.find(c => c.category === categoria);
   if (!conf) return;
-  
+
   const sheet = doc.sheetsByTitle[conf.title];
   if (!sheet) return;
-  
+
   await sheet.loadHeaderRow(conf.headerRow);
   const rows = await sheet.getRows();
   const equipRow = rows.find(r => r.get('N° DE SÉRIE') === numeroSerie);
-  
+
   if (equipRow) {
     equipRow.set('STATUS', newStatus);
     await equipRow.save();
@@ -441,7 +441,7 @@ app.get('/api/oss', async (req, res) => {
       if (sheet) {
         await sheet.loadHeaderRow(conf.headerRow);
         const rows = await sheet.getRows();
-        
+
         const oss = rows
           .filter(row => row.get('ORDEM DE SERVIÇO') || row.get('PROCESSO'))
           .map(row => ({
@@ -480,7 +480,7 @@ app.get('/api/oss', async (req, res) => {
 app.post('/api/oss', async (req, res) => {
   const data = req.body;
   const items = Array.isArray(data) ? data : [data];
-  
+
   if (items.length === 0) return res.status(400).json({ error: 'Nenhum dado enviado' });
 
   try {
@@ -492,7 +492,7 @@ app.post('/api/oss', async (req, res) => {
     if (!sheet) return res.status(404).json({ error: `Aba ${conf.title} não encontrada` });
 
     await sheet.loadHeaderRow(conf.headerRow);
-    
+
     const rowsToAdd = items.map(item => {
       let contratoForcado = item.contrato;
       let processoForcado = item.processo;
@@ -701,7 +701,7 @@ app.put('/api/tarefas/:rowNumber', async (req, res) => {
     const rows = await sheet.getRows();
     const row = rows.find(r => r.rowNumber === parseInt(req.params.rowNumber));
     if (!row) return res.status(404).json({ error: 'Tarefa não encontrada' });
-    
+
     row.set('Status', req.body.completed ? 'Concluída' : 'Pendente');
     await row.save();
     res.json({ message: 'Status atualizado' });

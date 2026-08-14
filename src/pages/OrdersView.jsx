@@ -24,6 +24,15 @@ export const OrdersView = () => {
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [filterContract, setFilterContract] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  useEffect(() => {
+    fetchData(); // <-- Now it fetches automatically!
+    const highlightOS = sessionStorage.getItem('searchOS');
+    if (highlightOS) {
+      setSearchTerm(highlightOS);
+      sessionStorage.removeItem('searchOS');
+    }
+  }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [contratosDb, setContratosDb] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -724,7 +733,7 @@ export const OrdersView = () => {
                                                 </span>
                                               )}
                                             </div>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">S/N: {eq.numero_serie || 'N/A'}</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">Mod: {eq.modelo || 'N/A'} | N/S: {eq.numero_serie || 'N/A'}</span>
                                           </div>
                                           <div className="flex items-center gap-3 shrink-0">
                                             <button 
@@ -760,7 +769,7 @@ export const OrdersView = () => {
                                                   )}
                                                 </div>
                                               )}
-                                              {eq.observacoes_tarefa && (
+                                              {eq.observacoes_tarefa && eq.observacoes_tarefa !== eq.tarefa && (
                                                 <div className="bg-slate-100/50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 rounded-lg p-2.5 text-xs">
                                                   <span className="font-bold text-slate-500 dark:text-slate-400 block mb-1 uppercase text-[10px]">Observações da Tarefa</span>
                                                   <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{eq.observacoes_tarefa}</p>

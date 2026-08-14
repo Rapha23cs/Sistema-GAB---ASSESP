@@ -61,9 +61,11 @@ const getStatusGrouped = (ossArray) => {
   return groupedOrders;
 };
 
-export const DashboardView = ({ user }) => {
+export const DashboardView = ({ user, setActiveTab }) => {
   const [modalState, setModalState] = useState({ isOpen: false, type: null });
-
+  const [osFilter, setOsFilter] = useState('todos');
+  const [equipFilter, setEquipFilter] = useState('todos');
+  const [showAllActivities, setShowAllActivities] = useState(false);
   const [oss, setOss] = useState([]);
   const [contratos, setContratos] = useState([]);
   const [equipamentos, setEquipamentos] = useState([]);
@@ -131,23 +133,25 @@ export const DashboardView = ({ user }) => {
 
   const eqInoperantes = equipamentos.filter(e => {
     const s = norm(e.status);
-    return s.includes('inoperante') || s.includes('condenado');
+    return s.includes('inoperante') || s.includes('condenado') || s.includes('manutencao') || s.includes('análise') || s.includes('avaliação');
+  });
+  
+  const eqComPendencia = equipamentos.filter(e => {
+    const s = norm(e.status);
+    return s.includes('pendencia');
   });
   
   const licitacoesAbertas = licitacoes.filter(l => {
     const s = norm(l.status);
     return !s.includes('conclui') && !s.includes('finaliz');
   }).length;
-  const eqEmManutencao = equipamentos.filter(e => {
+  
+  const eqFuncionando = equipamentos.filter(e => {
     const s = norm(e.status);
-    return s.includes('análise') || s.includes('avaliação') || s.includes('manutencao');
-  });
-  const eqComPendencia = equipamentos.filter(e => {
-    const s = norm(e.status);
-    return s.includes('funcionando com pendencia') || s.includes('pendencia');
+    return s !== '' && !eqInoperantes.includes(e) && !eqComPendencia.includes(e);
   });
   
-  const equipamentosInoperantes = eqInoperantes.length + eqEmManutencao.length + eqComPendencia.length;
+  const equipamentosInoperantes = eqInoperantes.length + eqComPendencia.length;
 
   const equipmentsByType = equipamentos.reduce((acc, eq) => {
     const type = eq.equipamento || 'Outro';
@@ -174,17 +178,66 @@ export const DashboardView = ({ user }) => {
     return str;
   };
 
-  const recentesOS = [...groupedOS]
+  const atividadesRecentes = [];
+
+  [...groupedOS]
     .sort((a, b) => parseDateBr(b.data_tarefa) - parseDateBr(a.data_tarefa))
     .slice(0, 4)
-    .map(o => ({
-    title: `OS ${o.ordem_servico || 'Nova'} ${o.statusGlobal === 'concluido' ? 'Concluída' : 'Atualizada'}`,
-    desc: `A ordem de serviço teve movimentação.`,
-    time: o.data_tarefa ? formatDateDisplay(o.data_tarefa) : 'Recente',
-    Icon: o.statusGlobal === 'concluido' ? Icons.CheckCircle : Icons.Wrench,
-    color: o.statusGlobal === 'concluido' ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400',
-    bg: o.statusGlobal === 'concluido' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50'
-  }));
+    .forEach(o => {
+      atividadesRecentes.push({
+        title: `OS ${o.ordem_servico || 'Nova'} ${o.statusGlobal === 'concluido' ? 'Concluída' : 'Atualizada'}`,
+        desc: `A ordem de serviço teve movimentação.`,
+        time: o.data_tarefa ? formatDateDisplay(o.data_tarefa) : 'Recente',
+        timestamp: parseDateBr(o.data_tarefa) || Date.now(),
+        Icon: o.statusGlobal === 'concluido' ? Icons.CheckCircle : Icons.Wrench,
+        color: o.statusGlobal === 'concluido' ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400',
+        bg: o.statusGlobal === 'concluido' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50'
+      });
+    });
+
+  [...licitacoes]
+    .slice(0, 3)
+    .forEach((l, i) => {
+      atividadesRecentes.push({
+        title: `Licitação ${l.modalidade || 'Registrada'}`,
+        desc: `Processo: ${l.processo_original || l.stargov || 'N/A'}`,
+        time: l.data ? formatDateDisplay(l.data) : 'Recente',
+        timestamp: parseDateBr(l.data) || (Date.now() - i * 100000),
+        Icon: Icons.Landmark,
+        color: 'text-purple-700 dark:text-purple-400',
+        bg: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800/50'
+      });
+    });
+
+  [...contratosVencendoList]
+    .slice(0, 3)
+    .forEach((c, i) => {
+      atividadesRecentes.push({
+        title: `Atenção: Contrato Vencendo`,
+        desc: `${c.numero_contrato || c.processo} vence em ${c.diasRestantes} dias.`,
+        time: c.vigencia,
+        timestamp: Date.now() + 100000 - i, // Alta prioridade
+        Icon: Icons.AlertCircle,
+        color: 'text-amber-700 dark:text-amber-400',
+        bg: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50'
+      });
+    });
+
+  [...eqInoperantes]
+    .slice(0, 3)
+    .forEach((e, i) => {
+      atividadesRecentes.push({
+        title: `Equipamento Inoperante`,
+        desc: `${e.equipamento} - S/N: ${e.numero_serie || 'N/A'}`,
+        time: 'Alerta',
+        timestamp: Date.now() + 50000 - i, // Alta prioridade
+        Icon: Icons.Monitor,
+        color: 'text-rose-700 dark:text-rose-400',
+        bg: 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/50'
+      });
+    });
+
+  atividadesRecentes.sort((a, b) => b.timestamp - a.timestamp);
 
   if (loading) {
     return (
@@ -201,7 +254,7 @@ export const DashboardView = ({ user }) => {
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao Sistema Gab, {user?.nome?.split(' ')[0] || 'Usuário'}!</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao Sistema GAB - ASSESP | PPMA, {user?.nome?.split(' ')[0] || 'Usuário'}!</h2>
             <p className="text-blue-100 dark:text-blue-200 text-sm max-w-2xl">
               Aqui está o resumo operacional das suas unidades hoje. Você tem <strong className="text-white font-semibold">{osEmAndamento} Ordens de Serviço</strong> em andamento e <strong className="text-amber-300 font-semibold">{contratosAVencer} Contrato{contratosAVencer !== 1 ? 's' : ''}</strong> vencendo nos próximos 90 dias.
             </p>
@@ -216,12 +269,16 @@ export const DashboardView = ({ user }) => {
       {/* Main KPI Grid */}
       <div className="grid grid-cols-4 gap-6">
         {[
-          { label: 'OS em Andamento', value: osEmAndamento.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-blue-600 dark:text-blue-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Briefcase, trend: 'Ativas', trendColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800/50' },
-          { label: 'Equipamentos Inoperantes', value: equipamentosInoperantes.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Monitor, trend: 'Atenção', trendColor: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800/50' },
-          { label: 'Contratos Vigentes', value: contratosAtivos.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.FileSignature, trend: 'Ativos', trendColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' },
-          { label: 'Licitações Abertas', value: licitacoesAbertas.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-purple-600 dark:text-purple-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Landmark, trend: 'Em Curso', trendColor: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800/50' },
+          { label: 'OS em Andamento', tab: 'Ordens', value: osEmAndamento.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-blue-600 dark:text-blue-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Briefcase, trend: 'Ativas', trendColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800/50' },
+          { label: 'Equipamentos Inoperantes', tab: 'Equipamentos', value: equipamentosInoperantes.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Monitor, trend: 'Atenção', trendColor: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800/50' },
+          { label: 'Contratos Vigentes', tab: 'Contratos', value: contratosAtivos.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.FileSignature, trend: 'Ativos', trendColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50' },
+          { label: 'Licitações Abertas', tab: 'Licitações', value: licitacoesAbertas.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-purple-600 dark:text-purple-400', border: 'border-slate-200 dark:border-slate-800', Icon: Icons.Landmark, trend: 'Em Curso', trendColor: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800/50' },
         ].map((stat, i) => (
-          <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-all duration-300 cursor-default group relative overflow-hidden`}>
+          <div 
+            key={i} 
+            onClick={() => setActiveTab && setActiveTab(stat.tab)}
+            className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer group relative overflow-hidden`}
+          >
             <div className="absolute -right-4 -top-4 opacity-[0.03] dark:opacity-10 text-slate-900 dark:text-white transform group-hover:scale-110 transition-transform duration-500">
                <stat.Icon size={120} />
             </div>
@@ -239,15 +296,20 @@ export const DashboardView = ({ user }) => {
 
       <div className="grid grid-cols-3 gap-6">
         {/* Atividades Recentes */}
-        <div className="col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-6 transition-colors duration-500">
-          <div className="flex justify-between items-center mb-6">
+        <div className={`col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-6 transition-all duration-500 flex flex-col ${showAllActivities ? 'max-h-[600px]' : ''}`}>
+          <div className="flex justify-between items-center mb-6 shrink-0">
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Icons.Clock /> Atividades Recentes
             </h3>
-            <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors cursor-pointer">Ver tudo</button>
+            <button 
+              onClick={() => setShowAllActivities(!showAllActivities)}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors cursor-pointer"
+            >
+              {showAllActivities ? 'Ver menos' : 'Ver tudo'}
+            </button>
           </div>
-          <div className="space-y-6">
-            {recentesOS.length > 0 ? recentesOS.map((activity, i) => (
+          <div className={`space-y-6 flex-1 ${showAllActivities ? 'overflow-y-auto pr-2 custom-scrollbar' : ''}`}>
+            {atividadesRecentes.length > 0 ? (showAllActivities ? atividadesRecentes : atividadesRecentes.slice(0, 4)).map((activity, i) => (
               <div key={i} className="flex gap-4 group">
                 <div className={`mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0 border shadow-sm ${activity.bg} ${activity.color}`}>
                   <activity.Icon />
@@ -357,18 +419,49 @@ export const DashboardView = ({ user }) => {
               {modalState.type === 'os' && (
                 <div className="space-y-6">
                   <div className="flex gap-4">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-xl flex-1 border border-blue-200 dark:border-blue-800 text-center font-bold">
+                    <button 
+                      onClick={() => setOsFilter(osFilter === 'pendente' ? 'todos' : 'pendente')}
+                      className={`p-3 rounded-xl flex-1 border text-center font-bold transition-all ${
+                        osFilter === 'pendente' || osFilter === 'todos' 
+                          ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-600 dark:border-blue-500 shadow-md transform scale-[1.02]'
+                          : 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                      }`}>
                       {groupedOS.filter(o => o.statusGlobal === 'pendente').length} Pendentes
-                    </div>
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-xl flex-1 border border-amber-200 dark:border-amber-800 text-center font-bold">
+                    </button>
+                    <button 
+                      onClick={() => setOsFilter(osFilter === 'aguardando' ? 'todos' : 'aguardando')}
+                      className={`p-3 rounded-xl flex-1 border text-center font-bold transition-all ${
+                        osFilter === 'aguardando' || osFilter === 'todos'
+                          ? 'bg-amber-500 dark:bg-amber-600 text-white border-amber-600 dark:border-amber-500 shadow-md transform scale-[1.02]'
+                          : 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                      }`}>
                       {groupedOS.filter(o => o.statusGlobal === 'aguardando').length} Aguardando
-                    </div>
+                    </button>
                   </div>
                   <div className="space-y-3">
-                    {groupedOS.filter(o => o.statusGlobal === 'pendente' || o.statusGlobal === 'aguardando').map((o, i) => (
+                    {groupedOS
+                      .filter(o => o.statusGlobal === 'pendente' || o.statusGlobal === 'aguardando')
+                      .filter(o => osFilter === 'todos' || o.statusGlobal === osFilter)
+                      .map((o, i) => (
                       <div key={i} className="p-4 border border-slate-200 dark:border-slate-800 rounded-xl flex justify-between items-center bg-slate-50 dark:bg-slate-800/30">
                         <div>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">OS {o.ordem_servico || 'Sem número'}</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p 
+                              className="font-bold text-slate-800 dark:text-slate-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              onClick={() => {
+                                sessionStorage.setItem('searchOS', o.ordem_servico);
+                                setModalState({ isOpen: false, type: null });
+                                if (setActiveTab) setActiveTab('Ordens');
+                              }}
+                            >
+                              OS {o.ordem_servico || 'Sem número'}
+                            </p>
+                            {o.tipo_servico && (
+                              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                {o.tipo_servico}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400">{o.equipamento || 'Equipamento não especificado'}</p>
                         </div>
                         <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border ${o.statusGlobal === 'pendente' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-400'}`}>
@@ -389,7 +482,16 @@ export const DashboardView = ({ user }) => {
                     contratosVencendoList.map((c, i) => (
                       <div key={i} className="p-4 border border-amber-200 dark:border-amber-900/50 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 flex flex-col gap-2">
                         <div className="flex justify-between items-start">
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{c.numero_contrato || c.processo || 'Contrato sem identificação'}</p>
+                          <p 
+                            className="font-bold text-slate-800 dark:text-slate-200 cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                            onClick={() => {
+                              sessionStorage.setItem('searchContract', c.numero_contrato || c.processo);
+                              setModalState({ isOpen: false, type: null });
+                              if (setActiveTab) setActiveTab('Contratos');
+                            }}
+                          >
+                            {c.numero_contrato || c.processo || 'Contrato sem identificação'}
+                          </p>
                           <span className="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-2 py-1 rounded-full shrink-0 ml-2">
                             Vence em {c.diasRestantes} {c.diasRestantes === 1 ? 'dia' : 'dias'}
                           </span>
@@ -406,35 +508,59 @@ export const DashboardView = ({ user }) => {
               {modalState.type === 'equipamentos' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-300 rounded-xl border border-rose-200 dark:border-rose-800 text-center">
+                    <button 
+                      onClick={() => setEquipFilter(equipFilter === 'funcionando' ? 'todos' : 'funcionando')}
+                      className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${equipFilter === 'funcionando' ? 'bg-emerald-600 border-emerald-600 text-white shadow-md transform scale-[1.02]' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'}`}
+                    >
+                      <p className="text-2xl font-bold">{eqFuncionando.length}</p>
+                      <p className="text-[10px] uppercase font-bold tracking-wide mt-1">Funcionando</p>
+                    </button>
+                    <button 
+                      onClick={() => setEquipFilter(equipFilter === 'inoperantes' ? 'todos' : 'inoperantes')}
+                      className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${equipFilter === 'inoperantes' ? 'bg-rose-600 border-rose-600 text-white shadow-md transform scale-[1.02]' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40'}`}
+                    >
                       <p className="text-2xl font-bold">{eqInoperantes.length}</p>
                       <p className="text-[10px] uppercase font-bold tracking-wide mt-1">Inoperantes</p>
-                    </div>
-                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 rounded-xl border border-orange-200 dark:border-orange-800 text-center">
-                      <p className="text-2xl font-bold">{eqEmManutencao.length}</p>
-                      <p className="text-[10px] uppercase font-bold tracking-wide mt-1">Em Manutenção</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-xl border border-amber-200 dark:border-amber-800 text-center">
+                    </button>
+                    <button 
+                      onClick={() => setEquipFilter(equipFilter === 'pendencia' ? 'todos' : 'pendencia')}
+                      className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${equipFilter === 'pendencia' ? 'bg-amber-600 border-amber-600 text-white shadow-md transform scale-[1.02]' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40'}`}
+                    >
                       <p className="text-2xl font-bold">{eqComPendencia.length}</p>
                       <p className="text-[10px] uppercase font-bold tracking-wide mt-1">Com Pendência</p>
-                    </div>
+                    </button>
                   </div>
                   
                   <div className="mt-6">
-                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Problemas por Tipo de Equipamento</h4>
-                    <div className="space-y-3">
-                      {Object.entries(equipmentsByType).filter(([_, counts]) => counts.inoperante > 0 || counts.manutencao > 0 || counts.pendencia > 0).map(([type, counts], i) => (
-                        <div key={i} className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">{type}</span>
-                          <div className="flex gap-2">
-                            {counts.inoperante > 0 && <span className="text-xs px-2 py-1 rounded bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-400 font-bold" title="Inoperantes">{counts.inoperante} Inop</span>}
-                            {counts.manutencao > 0 && <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 font-bold" title="Em Manutenção">{counts.manutencao} Manut</span>}
-                            {counts.pendencia > 0 && <span className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 font-bold" title="Com Pendência">{counts.pendencia} Pend</span>}
+                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Lista de Equipamentos</h4>
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {(equipFilter === 'todos' ? equipamentos : equipFilter === 'funcionando' ? eqFuncionando : equipFilter === 'inoperantes' ? eqInoperantes : eqComPendencia)
+                        .filter(e => e.numero_serie || e.equipamento)
+                        .map((e, i) => (
+                        <div key={i} className="flex flex-col p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/30">
+                          <div className="flex justify-between items-start mb-2">
+                            <p 
+                              className="font-bold text-slate-800 dark:text-slate-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              onClick={() => {
+                                sessionStorage.setItem('searchEquip', e.numero_serie || e.equipamento);
+                                setModalState({ isOpen: false, type: null });
+                                if (setActiveTab) setActiveTab('Equipamentos');
+                              }}
+                            >
+                              {e.equipamento || 'Equipamento'} {e.modelo ? `- ${e.modelo}` : ''}
+                            </p>
+                            <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border ${eqInoperantes.includes(e) ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-400' : eqComPendencia.includes(e) ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-400' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400'}`}>
+                              {eqInoperantes.includes(e) ? 'Inoperante' : eqComPendencia.includes(e) ? 'Com Pendência' : 'Funcionando'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+                            <span>S/N: {e.numero_serie || 'N/A'}</span>
+                            <span>{e.unidade || 'Unidade não informada'}</span>
                           </div>
                         </div>
                       ))}
-                      {Object.values(equipmentsByType).every(counts => counts.inoperante === 0 && counts.manutencao === 0 && counts.pendencia === 0) && (
-                        <p className="text-center text-slate-500 text-sm">Nenhum problema registrado nos equipamentos.</p>
+                      {(equipFilter === 'todos' ? equipamentos : equipFilter === 'funcionando' ? eqFuncionando : equipFilter === 'inoperantes' ? eqInoperantes : eqComPendencia).filter(e => e.numero_serie || e.equipamento).length === 0 && (
+                        <p className="text-center text-slate-500 text-sm py-4">Nenhum equipamento encontrado para este filtro.</p>
                       )}
                     </div>
                   </div>

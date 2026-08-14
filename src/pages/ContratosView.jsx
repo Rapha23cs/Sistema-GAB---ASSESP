@@ -46,6 +46,11 @@ export const ContratosView = () => {
 
   useEffect(() => {
     fetchContratos();
+    const highlightContract = sessionStorage.getItem('searchContract');
+    if (highlightContract) {
+      setSearchTerm(highlightContract);
+      sessionStorage.removeItem('searchContract');
+    }
   }, []);
 
   const clearFilters = () => {

@@ -39,6 +39,11 @@ export const EquipmentsView = () => {
 
   useEffect(() => {
     fetchData();
+    const highlightEquip = sessionStorage.getItem('searchEquip');
+    if (highlightEquip) {
+      setSearchTerm(highlightEquip);
+      sessionStorage.removeItem('searchEquip');
+    }
   }, []);
 
   const clearFilters = () => {

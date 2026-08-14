@@ -9,6 +9,8 @@ import { LoginView } from './pages/LoginView';
 import { LandingView } from './pages/LandingView';
 import { DashboardView } from './pages/DashboardView';
 import { AdminUsersView } from './pages/AdminUsersView';
+import { GlobalSearch } from './components/GlobalSearch';
+import { NotificationBell } from './components/NotificationBell';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -185,24 +187,14 @@ export default function App() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{activeTab}</h1>
 
             <div className="flex items-center gap-6">
-              <div className="relative">
-                <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Pesquisar no sistema..."
-                  className="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white dark:focus:bg-slate-900 transition-all w-80 placeholder:text-slate-400 dark:text-slate-200 shadow-inner"
-                />
-              </div>
-              <button className="relative text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer">
-                <Icons.Bell />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-              </button>
+              <GlobalSearch setActiveTab={setActiveTab} />
+              <NotificationBell setActiveTab={setActiveTab} />
             </div>
           </header>
 
           {/* Dynamic View Rendering based on active tab */}
           <div className="p-8 flex-1 z-0 relative">
-            {activeTab === 'Dashboard' && <DashboardView user={user} />}
+            {activeTab === 'Dashboard' && <DashboardView user={user} setActiveTab={setActiveTab} />}
             {activeTab === 'Ordens' && <OrdersView />}
             {activeTab === 'Equipamentos' && <EquipmentsView />}
             {activeTab === 'Contratos' && <ContratosView />}
