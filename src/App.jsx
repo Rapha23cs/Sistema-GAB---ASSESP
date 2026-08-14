@@ -188,7 +188,7 @@ export default function App() {
 
             <div className="flex items-center gap-6">
               <GlobalSearch setActiveTab={setActiveTab} />
-              <NotificationBell setActiveTab={setActiveTab} />
+              <NotificationBell setActiveTab={setActiveTab} user={user} />
             </div>
           </header>
 

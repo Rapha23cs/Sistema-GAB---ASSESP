@@ -710,6 +710,21 @@ app.put('/api/tarefas/:rowNumber', async (req, res) => {
   }
 });
 
+app.delete('/api/tarefas/:rowNumber', async (req, res) => {
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Tarefas'];
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.rowNumber === parseInt(req.params.rowNumber));
+    if (!row) return res.status(404).json({ error: 'Tarefa não encontrada' });
+
+    await row.delete();
+    res.json({ message: 'Tarefa excluída com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // ROTAS DE AUTENTICAÇÃO
 // ==========================================

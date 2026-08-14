@@ -6,9 +6,14 @@ import { ContractBadge, EqStatusBadge } from '../components/Badges';
 import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
 
 export const EquipmentsView = () => {
-  const [filterType, setFilterType] = useState('Todos');
-  const [filterContract, setFilterContract] = useState('Todos');
-  const [filterStatus, setFilterStatus] = useState('Todos');
+  const [filterTypes, setFilterTypes] = useState([]);
+  const [isTypesOpen, setIsTypesOpen] = useState(false);
+  const [filterContracts, setFilterContracts] = useState([]);
+  const [isContractsOpen, setIsContractsOpen] = useState(false);
+  const [filterStatuses, setFilterStatuses] = useState([]);
+  const [isStatusesOpen, setIsStatusesOpen] = useState(false);
+  const [filterModelos, setFilterModelos] = useState([]);
+  const [isModelosOpen, setIsModelosOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [equipamentos, setEquipamentos] = useState([]);
@@ -42,14 +47,16 @@ export const EquipmentsView = () => {
     const highlightEquip = sessionStorage.getItem('searchEquip');
     if (highlightEquip) {
       setSearchTerm(highlightEquip);
+      setShowFilters(true);
       sessionStorage.removeItem('searchEquip');
     }
   }, []);
 
   const clearFilters = () => {
-    setFilterType('Todos');
-    setFilterContract('Todos');
-    setFilterStatus('Todos');
+    setFilterTypes([]);
+    setFilterContracts([]);
+    setFilterStatuses([]);
+    setFilterModelos([]);
     setSearchTerm('');
   };
 
@@ -133,28 +140,115 @@ export const EquipmentsView = () => {
     setExpandedRow(expandedRow === key ? null : key);
   };
 
+  const generatePDFDraft = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert('Por favor, permita pop-ups para gerar o PDF.');
+
+    const dateStr = new Date().toLocaleString('pt-BR');
+    
+    let html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Relatório de Equipamentos - ${dateStr}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #334155; }
+            h1 { text-align: center; color: #0f172a; font-size: 22px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+            p.subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            th { background-color: #f8fafc; color: #475569; font-weight: 700; padding: 12px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+            td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            .status-operante { color: #059669; font-weight: bold; background: #d1fae5; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+            .status-pendencia { color: #d97706; font-weight: bold; background: #fef3c7; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+            .status-inoperante { color: #e11d48; font-weight: bold; background: #ffe4e6; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+            
+            @media print {
+              @page { margin: 1cm; size: landscape; }
+              body { padding: 0; }
+              table { box-shadow: none; border: 1px solid #e2e8f0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório de Inventário de Equipamentos</h1>
+          <p class="subtitle">Gerado em: ${dateStr} &bull; Total listado: ${filteredEquipments.length} equipamentos</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Equipamento / Modelo</th>
+                <th>Série</th>
+                <th>Unidade / Localidade</th>
+                <th>OS Atual</th>
+                <th style="width: 25%">Pendência</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+    `;
+
+    filteredEquipments.forEach(eq => {
+      let statusClass = '';
+      const st = (eq.status || '').toLowerCase();
+      if (st.includes('funcionando') || st === 'operante') statusClass = 'status-operante';
+      else if (st.includes('inoperante') || st.includes('condenado')) statusClass = 'status-inoperante';
+      else statusClass = 'status-pendencia';
+
+      html += `
+        <tr>
+          <td><strong style="font-size:12px;color:#0f172a;">${eq.equipamento || eq.categoria}</strong><br/>${eq.modelo || '-'}</td>
+          <td>${eq.numero_serie || '-'}</td>
+          <td><strong style="color:#0f172a;">${eq.unidade || '-'}</strong><br/><span style="font-size:10px;color:#64748b;">${eq.localidade || '-'}</span></td>
+          <td>${eq.ordem_servico || '-'}</td>
+          <td style="font-size:10px;color:#475569;">${eq.informacoes_pendencias || '-'}</td>
+          <td><span class="${statusClass}">${eq.status || '-'}</span></td>
+        </tr>
+      `;
+    });
+
+    html += `
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() { 
+              setTimeout(() => {
+                window.print(); 
+                window.onafterprint = function(){ window.close(); };
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const filteredEquipments = equipamentos.filter(eq => {
-    const matchType = filterType === 'Todos' || eq.categoria === filterType;
+    const matchType = filterTypes.length === 0 || filterTypes.includes(eq.categoria);
     
-    let matchContract = true;
+    let matchContract = filterContracts.length === 0;
     const contractVal = (eq.cobertura_contrato || '').toUpperCase();
-    
-    if (filterContract === 'Sem Contrato') {
-      matchContract = contractVal.includes('SEM CONTRATO');
-    } else if (filterContract === 'Garantia') {
-      matchContract = contractVal.includes('GARANTIA');
-    } else if (filterContract === 'Com Contrato') {
-      matchContract = !contractVal.includes('SEM CONTRATO') && !contractVal.includes('GARANTIA') && contractVal.trim() !== '';
+    if (filterContracts.length > 0) {
+      matchContract = filterContracts.some(fc => {
+        if (fc === 'Sem Contrato') return contractVal.includes('SEM CONTRATO');
+        if (fc === 'Garantia') return contractVal.includes('GARANTIA');
+        if (fc === 'Com Contrato') return !contractVal.includes('SEM CONTRATO') && !contractVal.includes('GARANTIA') && contractVal.trim() !== '';
+        return false;
+      });
     }
 
-    let matchStatus = true;
+    let matchStatus = filterStatuses.length === 0;
     const statusVal = (eq.status || '').toLowerCase();
-    if (filterStatus === 'Operante') {
-      matchStatus = statusVal.includes('funcionando') || statusVal === 'operante';
-    } else if (filterStatus === 'Funcionando com Pendência') {
-      matchStatus = statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
-    } else if (filterStatus === 'Inoperante') {
-      matchStatus = statusVal.includes('inoperante') || statusVal.includes('condenado');
+    if (filterStatuses.length > 0) {
+      matchStatus = filterStatuses.some(fs => {
+        if (fs === 'Operante') return statusVal.includes('funcionando') || statusVal === 'operante';
+        if (fs === 'Funcionando com Pendência') return statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
+        if (fs === 'Inoperante') return statusVal.includes('inoperante') || statusVal.includes('condenado');
+        return false;
+      });
     }
 
     const searchLower = searchTerm.toLowerCase();
@@ -166,8 +260,14 @@ export const EquipmentsView = () => {
       (eq.localidade || '').toLowerCase().includes(searchLower) ||
       (eq.ordem_servico || '').toLowerCase().includes(searchLower);
     
-    return matchType && matchContract && matchStatus && matchSearch;
+    const matchModelo = filterModelos.length === 0 || filterModelos.includes(eq.modelo);
+
+    return matchType && matchContract && matchStatus && matchSearch && matchModelo;
   });
+
+  const modelos = [...new Set(equipamentos.map(eq => eq.modelo).filter(Boolean))].sort();
+  const unidades = [...new Set(equipamentos.map(eq => eq.unidade).filter(Boolean))].sort();
+  const coberturas = [...new Set(equipamentos.map(eq => eq.cobertura_contrato).filter(Boolean))].sort();
 
   // KPIs
   const totalEquipments = filteredEquipments.length;
@@ -217,6 +317,13 @@ export const EquipmentsView = () => {
               <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
             </button>
             <button 
+              onClick={generatePDFDraft}
+              className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center gap-2 cursor-pointer"
+              title="Gerar Relatório PDF"
+            >
+              <Icons.FileText className="w-4 h-4" /> Gerar PDF
+            </button>
+            <button 
               onClick={() => setShowFilters(!showFilters)}
               className={`px-4 py-2 ${showFilters ? 'bg-slate-100 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'} text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer`}
             >
@@ -240,37 +347,171 @@ export const EquipmentsView = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] cursor-pointer"
+            {/* Categorias (Tipos) */}
+            <div 
+              className="relative" 
+              tabIndex={0}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setIsTypesOpen(false);
+                }
+              }}
             >
-              <option value="Todos">Todos os Tipos</option>
-              <option value="Esteira Raio-x">Esteira Raio-x</option>
-              <option value="Bodyscan">Bodyscan</option>
-              <option value="Pórticos">Pórticos</option>
-            </select>
-            <select
-              value={filterContract}
-              onChange={(e) => setFilterContract(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] cursor-pointer"
+              <button 
+                onClick={() => setIsTypesOpen(!isTypesOpen)}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] flex justify-between items-center gap-2 cursor-pointer"
+              >
+                <span className="truncate max-w-[150px]">
+                  {filterTypes.length > 0 ? `${filterTypes.length} Categoria(s)` : 'Categorias'}
+                </span>
+                <Icons.ChevronDown className="w-4 h-4 flex-shrink-0" />
+              </button>
+              
+              {isTypesOpen && (
+                <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
+                  {['Esteira Raio-x', 'Bodyscan', 'Pórticos'].map((opt, i) => (
+                    <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                      <input 
+                        type="checkbox"
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white"
+                        checked={filterTypes.includes(opt)}
+                        onChange={(e) => {
+                          if (e.target.checked) setFilterTypes([...filterTypes, opt]);
+                          else setFilterTypes(filterTypes.filter(item => item !== opt));
+                        }}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Contratos */}
+            <div 
+              className="relative" 
+              tabIndex={0}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setIsContractsOpen(false);
+                }
+              }}
             >
-              <option value="Todos">Todos os Contratos</option>
-              <option value="Com Contrato">Com Contrato</option>
-              <option value="Sem Contrato">Sem Contrato</option>
-              <option value="Garantia">Garantia</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] cursor-pointer"
+              <button 
+                onClick={() => setIsContractsOpen(!isContractsOpen)}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] flex justify-between items-center gap-2 cursor-pointer"
+              >
+                <span className="truncate max-w-[150px]">
+                  {filterContracts.length > 0 ? `${filterContracts.length} Contrato(s)` : 'Contratos'}
+                </span>
+                <Icons.ChevronDown className="w-4 h-4 flex-shrink-0" />
+              </button>
+              
+              {isContractsOpen && (
+                <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
+                  {['Com Contrato', 'Sem Contrato', 'Garantia'].map((opt, i) => (
+                    <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                      <input 
+                        type="checkbox"
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white"
+                        checked={filterContracts.includes(opt)}
+                        onChange={(e) => {
+                          if (e.target.checked) setFilterContracts([...filterContracts, opt]);
+                          else setFilterContracts(filterContracts.filter(item => item !== opt));
+                        }}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Statuses */}
+            <div 
+              className="relative" 
+              tabIndex={0}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setIsStatusesOpen(false);
+                }
+              }}
             >
-              <option value="Todos">Todos os Status</option>
-              <option value="Operante">Operantes</option>
-              <option value="Funcionando com Pendência">Funcionando com Pendência</option>
-              <option value="Inoperante">Inoperantes</option>
-            </select>
-            {(searchTerm || filterType !== 'Todos' || filterContract !== 'Todos' || filterStatus !== 'Todos') && (
+              <button 
+                onClick={() => setIsStatusesOpen(!isStatusesOpen)}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] flex justify-between items-center gap-2 cursor-pointer"
+              >
+                <span className="truncate max-w-[150px]">
+                  {filterStatuses.length > 0 ? `${filterStatuses.length} Status` : 'Status'}
+                </span>
+                <Icons.ChevronDown className="w-4 h-4 flex-shrink-0" />
+              </button>
+              
+              {isStatusesOpen && (
+                <div className="absolute top-full mt-1 left-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
+                  {['Operante', 'Funcionando com Pendência', 'Inoperante'].map((opt, i) => (
+                    <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                      <input 
+                        type="checkbox"
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white"
+                        checked={filterStatuses.includes(opt)}
+                        onChange={(e) => {
+                          if (e.target.checked) setFilterStatuses([...filterStatuses, opt]);
+                          else setFilterStatuses(filterStatuses.filter(item => item !== opt));
+                        }}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div 
+              className="relative" 
+              tabIndex={0}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setIsModelosOpen(false);
+                }
+              }}
+            >
+              <button 
+                onClick={() => setIsModelosOpen(!isModelosOpen)}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] flex justify-between items-center gap-2 cursor-pointer"
+              >
+                <span className="truncate max-w-[150px]">
+                  {filterModelos.length > 0 ? `${filterModelos.length} Modelo(s)` : 'Todos os Modelos'}
+                </span>
+                <Icons.ChevronDown className="w-4 h-4 flex-shrink-0" />
+              </button>
+              
+              {isModelosOpen && (
+                <div className="absolute top-full mt-1 left-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto p-2 flex flex-col gap-1">
+                  {modelos.length === 0 ? (
+                    <div className="p-2 text-sm text-slate-500 text-center">Nenhum modelo</div>
+                  ) : (
+                    modelos.map((m, i) => (
+                      <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                        <input 
+                          type="checkbox"
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white"
+                          checked={filterModelos.includes(m)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFilterModelos([...filterModelos, m]);
+                            } else {
+                              setFilterModelos(filterModelos.filter(item => item !== m));
+                            }
+                          }}
+                        />
+                        <span className="truncate">{m}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            {(searchTerm || filterTypes.length > 0 || filterContracts.length > 0 || filterStatuses.length > 0 || filterModelos.length > 0) && (
               <button 
                 onClick={clearFilters}
                 className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
@@ -435,7 +676,10 @@ export const EquipmentsView = () => {
                 {/* Unidade */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Unidade</label>
-                  <input name="unidade" value={newEqData.unidade} onChange={handleInputChange} type="text" placeholder="Ex: Presídio Central" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                  <input name="unidade" list="unidades-list" value={newEqData.unidade} onChange={handleInputChange} type="text" placeholder="Ex: Presídio Central" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                  <datalist id="unidades-list">
+                    {unidades.map((u, i) => <option key={i} value={u} />)}
+                  </datalist>
                 </div>
 
                 {/* Localidade */}
@@ -447,7 +691,10 @@ export const EquipmentsView = () => {
                 {/* Modelo */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Modelo</label>
-                  <input name="modelo" value={newEqData.modelo} onChange={handleInputChange} type="text" placeholder="Ex: Rapiscan 620XR" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                  <input name="modelo" list="modelos-list" value={newEqData.modelo} onChange={handleInputChange} type="text" placeholder="Ex: Rapiscan 620XR" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                  <datalist id="modelos-list">
+                    {modelos.map((m, i) => <option key={i} value={m} />)}
+                  </datalist>
                 </div>
 
                 {/* Número de Série */}
@@ -459,7 +706,10 @@ export const EquipmentsView = () => {
                 {/* Cobertura de Contrato */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Cobertura de Contrato</label>
-                  <input name="cobertura_contrato" value={newEqData.cobertura_contrato} onChange={handleInputChange} type="text" placeholder="Ex: Empresa X / Com Contrato" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                  <input name="cobertura_contrato" list="coberturas-list" value={newEqData.cobertura_contrato} onChange={handleInputChange} type="text" placeholder="Ex: Empresa X / Com Contrato" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                  <datalist id="coberturas-list">
+                    {coberturas.map((c, i) => <option key={i} value={c} />)}
+                  </datalist>
                 </div>
 
                 {/* Ordem de Serviço Atual */}

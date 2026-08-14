@@ -24,16 +24,17 @@ export const OrdersView = () => {
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [filterContract, setFilterContract] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   
   useEffect(() => {
     fetchData(); // <-- Now it fetches automatically!
     const highlightOS = sessionStorage.getItem('searchOS');
     if (highlightOS) {
       setSearchTerm(highlightOS);
+      setShowFilters(true);
       sessionStorage.removeItem('searchOS');
     }
   }, []);
-  const [showFilters, setShowFilters] = useState(false);
   const [contratosDb, setContratosDb] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   

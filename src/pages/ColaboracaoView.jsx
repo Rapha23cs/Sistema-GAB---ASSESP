@@ -67,6 +67,25 @@ export const ColaboracaoView = ({ user }) => {
     }
   };
 
+  const handleDeleteTask = async (task) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+    try {
+      // Optimistic delete
+      setTasks(prev => prev.filter(t => t.id !== task.id));
+      
+      const res = await apiFetch(`${API_URL}/api/tarefas/${task.rowNumber}`, {
+        method: 'DELETE'
+      });
+      
+      if (!res.ok) {
+        fetchTasks();
+      }
+    } catch (err) {
+      console.error(err);
+      fetchTasks();
+    }
+  };
+
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (!newTask.trim()) return;
@@ -140,7 +159,8 @@ export const ColaboracaoView = ({ user }) => {
                   onChange={(e) => setSelectedAssignee(e.target.value)}
                   className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
                 >
-                  <option value="" disabled>Atribuir para...</option>
+                  <option value="" disabled>Atribuir para / Tipo de Post</option>
+                  <option value="Todos" className="font-bold text-emerald-600">Aviso Geral (Todos)</option>
                   {activeUsers.filter(u => u.nome !== user?.nome).map(u => (
                     <option key={u.id} value={u.nome}>{u.nome}</option>
                   ))}
@@ -183,32 +203,66 @@ export const ColaboracaoView = ({ user }) => {
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <span className="font-bold text-blue-700 dark:text-blue-400">{task.author}</span>
-                        <span className="text-slate-500 dark:text-slate-400 text-sm mx-2">atribuiu para</span>
-                        <span className="font-bold text-purple-700 dark:text-purple-400">@{task.assignee}</span>
+                        {task.assignee === 'Todos' ? (
+                          <>
+                            <span className="font-bold text-blue-700 dark:text-blue-400">{task.author}</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-sm mx-2">publicou um</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">Aviso Geral</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-bold text-blue-700 dark:text-blue-400">{task.author}</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-sm mx-2">atribuiu para</span>
+                            <span className="font-bold text-purple-700 dark:text-purple-400">@{task.assignee}</span>
+                          </>
+                        )}
                       </div>
                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{task.date}</span>
                     </div>
                     
-                    <p className={`text-base leading-relaxed ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <p className={`text-base leading-relaxed ${(task.completed && task.assignee !== 'Todos') ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-200'}`}>
                       {task.text}
                     </p>
                     
                     {/* Actions / Status */}
                     <div className="mt-4 flex items-center gap-4">
-                      <button 
-                        onClick={() => toggleTask(task)}
-                        disabled={task.rowNumber === -1}
-                        className={`flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg border ${task.completed ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 shadow-sm'} ${task.rowNumber === -1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {task.completed ? <Icons.CheckSquare /> : <Icons.Square />}
-                        {task.completed ? 'Tarefa Concluída (Check-out)' : 'Fazer Check-out'}
-                      </button>
+                      {task.assignee === 'Todos' ? (
+                        <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50">
+                           <Icons.MessageSquare /> Aviso
+                        </div>
+                      ) : (
+                        user?.nome === task.assignee ? (
+                          <button 
+                            onClick={() => toggleTask(task)}
+                            disabled={task.rowNumber === -1}
+                            className={`flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg border ${task.completed ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 shadow-sm'} ${task.rowNumber === -1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            {task.completed ? <Icons.CheckSquare /> : <Icons.Square />}
+                            {task.completed ? 'Tarefa Concluída (Check-out)' : 'Fazer Check-out'}
+                          </button>
+                        ) : (
+                          <div className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border ${task.completed ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800'}`}>
+                             {task.completed ? <Icons.CheckSquare /> : <Icons.Square />}
+                             {task.completed ? 'Concluída' : 'Aguardando ' + task.assignee}
+                          </div>
+                        )
+                      )}
                       
-                      {!task.completed && (
+                      {!task.completed && task.assignee !== 'Todos' && (
                         <span className={`text-xs px-2 py-1 rounded-md border uppercase tracking-wider font-bold ${task.priority === 'alta' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50' : task.priority === 'media' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
                           Prioridade {task.priority}
                         </span>
+                      )}
+
+                      {user?.nome === task.author && (
+                        <button
+                          onClick={() => handleDeleteTask(task)}
+                          disabled={task.rowNumber === -1}
+                          className="ml-auto flex items-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 transition-colors p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                          title="Excluir Tarefa"
+                        >
+                          <Icons.Trash2 /> Excluir
+                        </button>
                       )}
                     </div>
                   </div>

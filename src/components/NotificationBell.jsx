@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { apiFetch, API_URL } from '../config';
 
@@ -20,22 +20,25 @@ const parseDateOutside = (dStr) => {
   return 0;
 };
 
-export const NotificationBell = ({ setActiveTab }) => {
+export const NotificationBell = ({ setActiveTab, user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const prevAlertsStrRef = useRef(null);
 
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        const [eqRes, contRes] = await Promise.all([
+        const [eqRes, contRes, tarRes] = await Promise.all([
           apiFetch(`${API_URL}/api/equipamentos`),
-          apiFetch(`${API_URL}/api/contratos`)
+          apiFetch(`${API_URL}/api/contratos`),
+          apiFetch(`${API_URL}/api/tarefas?t=${Date.now()}`)
         ]);
         
         const eqs = await eqRes.json();
         const conts = await contRes.json();
+        const tarefas = await tarRes.json();
         
         const newAlerts = [];
         
@@ -77,9 +80,56 @@ export const NotificationBell = ({ setActiveTab }) => {
             });
           }
         }
+
+        if (Array.isArray(tarefas) && user) {
+          const minhasTarefas = tarefas.filter(t => !t.completed && t.assignee === user.nome);
+          if (minhasTarefas.length > 0) {
+            newAlerts.push({
+              id: 'tarefas',
+              title: 'Tarefas Pendentes',
+              desc: `Você tem ${minhasTarefas.length} tarefa(s) aguardando o seu check-out.`,
+              icon: Icons.CheckSquare,
+              color: 'text-blue-500',
+              bg: 'bg-blue-50 dark:bg-blue-900/30',
+              tab: 'Colaboração'
+            });
+          }
+
+          const avisos = tarefas.filter(t => t.assignee === 'Todos');
+          if (avisos.length > 0) {
+            newAlerts.push({
+              id: 'avisos',
+              title: 'Avisos Gerais no Mural',
+              desc: `Há ${avisos.length} aviso(s) importante(s) no fórum para toda a equipe.`,
+              icon: Icons.MessageSquare,
+              color: 'text-emerald-500',
+              bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+              tab: 'Colaboração'
+            });
+          }
+        }
         
         setAlerts(newAlerts);
         setLoading(false);
+
+        const newAlertsStr = JSON.stringify(newAlerts);
+        
+        if (prevAlertsStrRef.current === null) {
+          // Initial load
+          if (newAlerts.length > 0) {
+            setIsOpen(true);
+            setTimeout(() => setIsOpen(false), 3000);
+          }
+        } else if (prevAlertsStrRef.current !== newAlertsStr) {
+          // Changes detected (new alerts)
+          if (newAlerts.length > 0) {
+            setIsOpen(true);
+            setTimeout(() => setIsOpen(false), 3000);
+          }
+        }
+        
+        prevAlertsStrRef.current = newAlertsStr;
+
       } catch (err) {
         console.error('Error fetching alerts', err);
         setLoading(false);

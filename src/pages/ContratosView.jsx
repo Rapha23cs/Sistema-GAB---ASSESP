@@ -9,9 +9,7 @@ export const ContratosView = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
-  const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterResponsavel, setFilterResponsavel] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
 
   // CRUD State
@@ -53,28 +51,19 @@ export const ContratosView = () => {
     }
   }, []);
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setFilterResponsavel('');
-    setStatusFilter('Todos');
-  };
-
   const toggleRow = (id) => setExpandedRow(expandedRow === id ? null : id);
 
   const filteredContratos = contratos.filter(contract => {
     const searchMatch = !searchTerm ||
       (contract.numero_contrato && contract.numero_contrato.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (contract.objeto && contract.objeto.toLowerCase().includes(searchTerm.toLowerCase()));
-    const responsavelMatch = !filterResponsavel ||
-      (contract.responsavel && contract.responsavel === filterResponsavel);
+      (contract.objeto && contract.objeto.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (contract.processo && contract.processo.toLowerCase().includes(searchTerm.toLowerCase()));
       
     const cStatus = (contract.status || '').toUpperCase().trim();
     const statusMatch = statusFilter === 'Todos' || cStatus === statusFilter;
 
-    return searchMatch && responsavelMatch && statusMatch;
+    return searchMatch && statusMatch;
   });
-
-  const responsaveis = [...new Set(contratos.map(c => c.responsavel).filter(Boolean))];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -202,7 +191,7 @@ export const ContratosView = () => {
           <div className="flex gap-3 items-center">
             
             {/* Status Filter Cards */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mr-2 shadow-inner h-10">
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-inner h-10">
               <button
                 onClick={() => setStatusFilter('Todos')}
                 className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${statusFilter === 'Todos' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
@@ -223,6 +212,26 @@ export const ContratosView = () => {
               </button>
             </div>
 
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por número, objeto ou processo..."
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-72 h-10 transition-all focus:w-80"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  title="Limpar Busca"
+                >
+                  <Icons.X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             <button
               onClick={fetchContratos}
               className="px-4 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
@@ -230,48 +239,15 @@ export const ContratosView = () => {
             >
               <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
             </button>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 ${showFilters ? 'bg-slate-100 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'} text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer`}
-            >
-              Filtros
-            </button>
+            
             <button
               onClick={openNewModal}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+              className="px-4 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
             >
               <Icons.Plus /> Novo Contrato
             </button>
           </div>
         </div>
-
-        {showFilters && (
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap gap-4">
-            <input
-              type="text"
-              placeholder="Buscar por número ou objeto..."
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full max-w-md"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <select
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[200px]"
-              value={filterResponsavel}
-              onChange={(e) => setFilterResponsavel(e.target.value)}
-            >
-              <option value="">Todos os Responsáveis</option>
-              {responsaveis.map((r, i) => <option key={i} value={r}>{r}</option>)}
-            </select>
-            {(searchTerm || filterResponsavel) && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
-              >
-                Limpar Filtros
-              </button>
-            )}
-          </div>
-        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
