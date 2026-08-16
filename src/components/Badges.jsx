@@ -74,10 +74,11 @@ export const ContractBadge = ({ status }) => {
 };
 
 export const EqStatusBadge = ({ status }) => {
-  const val = (status || '').toUpperCase();
+  const val = (status || '').toUpperCase().trim();
   
   let styles = 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50';
   let Icon = Icons.CheckCircle;
+  let displayStatus = val || 'SEM INFO';
 
   if (val.includes('INOPERANTE') || val.includes('CONDENADO')) {
     styles = 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50';
@@ -88,11 +89,13 @@ export const EqStatusBadge = ({ status }) => {
   } else if (val.includes('PENDÊNCIA') || val.includes('PENDENCIA')) {
     styles = 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50';
     Icon = Icons.AlertCircle;
+  } else if (val === 'OPERANTE' || val.includes('FUNCIONANDO')) {
+    displayStatus = 'FUNCIONANDO';
   }
 
   return (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1.5 transition-colors ${styles}`} title={status}>
-      <Icon />{status || 'Sem Info'}
+      <Icon />{displayStatus}
     </span>
   );
 };

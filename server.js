@@ -533,7 +533,7 @@ app.post('/api/oss', async (req, res) => {
       for (const item of items) {
         // Garante que só funcione se for Corretiva
         if (item.tipo_servico && item.tipo_servico.toLowerCase() === 'corretiva') {
-          if (item.status === 'CONCLUIDO') {
+          if (item.status === 'CONCLUIDO' || item.status === 'CONCLUÍDO') {
             await updateEquipmentStatus(doc, item.categoria, item.numero_serie, 'FUNCIONANDO');
           } else if (item.status === 'PENDENTE') {
             await updateEquipmentStatus(doc, item.categoria, item.numero_serie, 'FUNCIONANDO COM PENDÊNCIA');
@@ -603,12 +603,16 @@ app.put('/api/oss/:id', async (req, res) => {
 
     // Automação: Atualizar status do equipamento baseado na OS
     try {
+      const tipoServico = data.tipo_servico || rowToUpdate.get('TIPO DE SERVIÇO') || '';
+      const numeroSerie = data.numero_serie || rowToUpdate.get('N° DE SÉRIE') || '';
+      const statusFinal = data.status || rowToUpdate.get('STATUS') || '';
+      
       // Garante que só funcione se for Corretiva
-      if (data.tipo_servico && data.tipo_servico.toLowerCase() === 'corretiva') {
-        if (data.status === 'CONCLUIDO') {
-          await updateEquipmentStatus(doc, data.categoria, data.numero_serie, 'FUNCIONANDO');
-        } else if (data.status === 'PENDENTE') {
-          await updateEquipmentStatus(doc, data.categoria, data.numero_serie, 'FUNCIONANDO COM PENDÊNCIA');
+      if (tipoServico.toLowerCase() === 'corretiva') {
+        if (statusFinal === 'CONCLUIDO' || statusFinal === 'CONCLUÍDO') {
+          await updateEquipmentStatus(doc, data.categoria, numeroSerie, 'FUNCIONANDO');
+        } else if (statusFinal === 'PENDENTE') {
+          await updateEquipmentStatus(doc, data.categoria, numeroSerie, 'FUNCIONANDO COM PENDÊNCIA');
         }
       }
     } catch (e) {
@@ -802,6 +806,45 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ token, user: { nome: userRow.get('Nome'), email: userRow.get('Email'), role: userRow.get('Role') } });
   } catch (error) {
     console.error('Erro no login:', error);
+    res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
+});
+
+// Atualizar Perfil do próprio usuário
+app.put('/api/auth/profile', async (req, res) => {
+  try {
+    const { nome, email } = req.body;
+    if (!nome || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios.' });
+
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Usuários'];
+    if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+
+    // Verifica se o novo email já está em uso por outra pessoa
+    if (rows.some(r => r.get('Email') === email && r.get('ID') !== req.user.id)) {
+      return res.status(400).json({ error: 'Este email já está em uso por outra conta.' });
+    }
+
+    const userRow = rows.find(r => r.get('ID') === req.user.id);
+    if (!userRow) return res.status(404).json({ error: 'Usuário não encontrado.' });
+
+    userRow.set('Nome', nome);
+    userRow.set('Email', email);
+    await userRow.save();
+
+    // Gerar novo JWT
+    const token = jwt.sign(
+      { id: userRow.get('ID'), email: userRow.get('Email'), role: userRow.get('Role'), nome: userRow.get('Nome') },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({ token, user: { nome: userRow.get('Nome'), email: userRow.get('Email'), role: userRow.get('Role') } });
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
     res.status(500).json({ error: 'Erro interno no servidor.' });
   }
 });

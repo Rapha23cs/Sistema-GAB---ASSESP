@@ -11,6 +11,7 @@ import { DashboardView } from './pages/DashboardView';
 import { AdminUsersView } from './pages/AdminUsersView';
 import { GlobalSearch } from './components/GlobalSearch';
 import { NotificationBell } from './components/NotificationBell';
+import { SettingsView } from './pages/SettingsView';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -62,6 +63,16 @@ export default function App() {
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+    setActiveTab('Dashboard');
+  };
 
   if (!isAuthenticated) {
     return (
@@ -159,15 +170,7 @@ export default function App() {
               {isDark ? <Icons.Sun /> : <Icons.Moon />}
             </button>
             <button 
-              onClick={() => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('user');
-                setIsAuthenticated(false);
-                setUser(null);
-                setActiveTab('Dashboard');
-              }}
+              onClick={handleLogout}
               className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-slate-700"
               title="Encerrar sessão"
             >
@@ -201,7 +204,8 @@ export default function App() {
             {activeTab === 'Licitações' && <LicitacoesView />}
             {activeTab === 'Colaboração' && <ColaboracaoView user={user} />}
             {activeTab === 'Usuários' && <AdminUsersView user={user} />}
-            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Colaboração' && activeTab !== 'Usuários') && (
+            {activeTab === 'Configurações' && <SettingsView user={user} isDark={isDark} setIsDark={setIsDark} onLogout={handleLogout} onUpdateUser={setUser} />}
+            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Colaboração' && activeTab !== 'Usuários' && activeTab !== 'Configurações') && (
               <div className="flex items-center justify-center h-full text-zinc-500">
                 Módulo "{activeTab}" em desenvolvimento...
               </div>

@@ -257,7 +257,7 @@ export const ContratosView = () => {
                 <th className="px-6 py-4 font-medium w-1/4">Contrato</th>
                 <th className="px-6 py-4 font-medium w-1/4">Objeto</th>
                 <th className="px-6 py-4 font-medium w-1/4">Processo Mãe</th>
-                <th className="px-6 py-4 font-medium">Última Consulta</th>
+                <th className="px-6 py-4 font-medium">Vigência</th>
                 <th className="px-6 py-4 font-medium text-center">Ações</th>
               </tr>
             </thead>
@@ -297,7 +297,7 @@ export const ContratosView = () => {
                           <span className="font-mono text-slate-700 dark:text-slate-300 font-medium">{contract.processo || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="font-medium text-slate-700 dark:text-slate-300">{contract.consulta || '-'}</span>
+                          <span className="font-medium text-slate-700 dark:text-slate-300">{contract.vigencia || '-'}</span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -328,8 +328,8 @@ export const ContratosView = () => {
                                 {/* Column 1 */}
                                 <div className="space-y-4">
                                   <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Vigência</p>
-                                    <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Calendar className="shrink-0 w-4 h-4" /> {contract.vigencia || '-'}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Recurso Financeiro</p>
+                                    <p className="text-sm text-slate-800 dark:text-slate-200">{contract.recurso_financeiro || '-'}</p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Tipo / Quantidade</p>
@@ -352,8 +352,8 @@ export const ContratosView = () => {
                                     <p className="text-sm text-slate-800 dark:text-slate-200">{contract.valor_mensal || '-'}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Recurso Financeiro</p>
-                                    <p className="text-sm text-slate-800 dark:text-slate-200">{contract.recurso_financeiro || '-'}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Última Consulta</p>
+                                    <p className="text-sm text-slate-800 dark:text-slate-200">{contract.consulta || '-'}</p>
                                   </div>
                                 </div>
 
