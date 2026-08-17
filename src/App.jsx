@@ -4,6 +4,7 @@ import { OrdersView } from './pages/OrdersView';
 import { EquipmentsView } from './pages/EquipmentsView';
 import { ContratosView } from './pages/ContratosView';
 import { LicitacoesView } from './pages/LicitacoesView';
+import { FinanceiroView } from './pages/FinanceiroView';
 import { ColaboracaoView } from './pages/ColaboracaoView';
 import { LoginView } from './pages/LoginView';
 import { LandingView } from './pages/LandingView';
@@ -124,7 +125,7 @@ export default function App() {
 
           <nav className="flex-1 px-4 py-6 space-y-2">
             {[
-              'Dashboard', 'Colaboração', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Usuários', 'Configurações'
+              'Dashboard', 'Colaboração', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Financeiro', 'Usuários', 'Configurações'
             ].map((item) => {
               const isActive = activeTab === item;
               let IconComponent;
@@ -134,6 +135,7 @@ export default function App() {
                 case 'Equipamentos': IconComponent = Icons.Monitor; break;
                 case 'Contratos': IconComponent = Icons.FileSignature; break;
                 case 'Licitações': IconComponent = Icons.Landmark; break;
+                case 'Financeiro': IconComponent = Icons.DollarSign; break;
                 case 'Colaboração': IconComponent = Icons.MessageSquare; break;
                 case 'Usuários': IconComponent = Icons.User; break;
                 case 'Configurações': IconComponent = Icons.Settings; break;
@@ -202,10 +204,11 @@ export default function App() {
             {activeTab === 'Equipamentos' && <EquipmentsView />}
             {activeTab === 'Contratos' && <ContratosView />}
             {activeTab === 'Licitações' && <LicitacoesView />}
+            {activeTab === 'Financeiro' && <FinanceiroView />}
             {activeTab === 'Colaboração' && <ColaboracaoView user={user} />}
             {activeTab === 'Usuários' && <AdminUsersView user={user} />}
             {activeTab === 'Configurações' && <SettingsView user={user} isDark={isDark} setIsDark={setIsDark} onLogout={handleLogout} onUpdateUser={setUser} />}
-            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Colaboração' && activeTab !== 'Usuários' && activeTab !== 'Configurações') && (
+            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Financeiro' && activeTab !== 'Colaboração' && activeTab !== 'Usuários' && activeTab !== 'Configurações') && (
               <div className="flex items-center justify-center h-full text-zinc-500">
                 Módulo "{activeTab}" em desenvolvimento...
               </div>

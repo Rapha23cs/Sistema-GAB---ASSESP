@@ -66,7 +66,20 @@ export const ContratosView = () => {
   });
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    
+    if (name === 'consulta') {
+      let v = value.replace(/\D/g, '');
+      if (v.length > 8) v = v.slice(0, 8);
+      if (v.length > 4) {
+        value = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
+      } else if (v.length > 2) {
+        value = `${v.slice(0, 2)}/${v.slice(2)}`;
+      } else {
+        value = v;
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -361,12 +374,7 @@ export const ContratosView = () => {
                                 <div className="space-y-4">
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Execução</p>
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-600 rounded-full" style={{ width: contract.execucao && contract.execucao.includes('%') ? contract.execucao : '0%' }}></div>
-                                      </div>
-                                      <span className="text-sm text-slate-700 dark:text-slate-300 font-mono">{contract.execucao || '-'}</span>
-                                    </div>
+                                    <p className="text-sm text-slate-800 dark:text-slate-200 uppercase">{contract.execucao || '-'}</p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Pendência (Saldo)</p>
@@ -521,8 +529,8 @@ export const ContratosView = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Execução (%)</label>
-                      <input name="execucao" value={formData.execucao} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Ex: 50%" />
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Execução (Descrição)</label>
+                      <input name="execucao" value={formData.execucao} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pendência (Saldo)</label>
@@ -542,7 +550,7 @@ export const ContratosView = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Última Consulta</label>
-                      <input name="consulta" value={formData.consulta} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                      <input name="consulta" value={formData.consulta} onChange={handleInputChange} type="text" placeholder="DD/MM/AAAA" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                     </div>
                   </div>
                 </div>

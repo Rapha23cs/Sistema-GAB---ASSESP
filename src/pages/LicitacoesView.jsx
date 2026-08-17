@@ -9,15 +9,15 @@ export const LicitacoesView = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
-  const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalidadeFilter, setModalidadeFilter] = useState('Todas');
+  const [tipoObjetoFilter, setTipoObjetoFilter] = useState('Todos');
 
   // CRUD State
   const initialFormState = {
     processo_original: '', processo_autorizacao: '', stargov: '', memo: '',
     modalidade: '', custeio: '', valor_previsto: '', objeto: '', quantidade: '',
-    status: '', localizacao: '', data: '', consultor: ''
+    status: '', localizacao: '', data: '', tipo_objeto: ''
   };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
@@ -67,7 +67,7 @@ export const LicitacoesView = () => {
       status: item.status || '',
       localizacao: item.localizacao || '',
       data: item.data || '',
-      consultor: item.consultor || ''
+      tipo_objeto: item.tipo_objeto || ''
     });
     setEditingId(item.id);
     setIsModalOpen(true);
@@ -112,7 +112,10 @@ export const LicitacoesView = () => {
     const matchModalidade = modalidadeFilter === 'Todas' || 
                             (item.modalidade || '').toUpperCase().includes(modalidadeFilter.toUpperCase());
 
-    return matchSearch && matchModalidade;
+    const matchTipoObjeto = tipoObjetoFilter === 'Todos' ||
+                            (item.tipo_objeto || '').toUpperCase() === tipoObjetoFilter.toUpperCase();
+
+    return matchSearch && matchModalidade && matchTipoObjeto;
   });
 
   // KPIs
@@ -150,52 +153,80 @@ export const LicitacoesView = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row xl:justify-between items-start xl:items-center gap-4 bg-white dark:bg-slate-900 transition-colors duration-500">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 whitespace-nowrap">
             <Icons.Landmark /> Processos Licitatórios
           </h2>
-          <div className="flex gap-3">
-            <button 
-              onClick={fetchData}
-              className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center gap-2"
-            >
-              <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
-            </button>
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 ${showFilters ? 'bg-slate-100 dark:bg-slate-700' : 'bg-white dark:bg-slate-800 hover:bg-slate-50'} text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm`}
-            >
-              Filtros
-            </button>
-            <button 
-              onClick={openNewModal}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2"
-            >
-              <Icons.Plus /> Novo Processo
-            </button>
-          </div>
-        </div>
+          <div className="flex flex-wrap gap-3 items-center w-full xl:w-auto">
+            
+            {/* Status Filter Cards */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-inner h-10">
+              <button
+                onClick={() => setTipoObjetoFilter('Todos')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${tipoObjetoFilter === 'Todos' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                TODOS
+              </button>
+              <button
+                onClick={() => setTipoObjetoFilter('Aquisição')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${tipoObjetoFilter === 'Aquisição' ? 'bg-blue-500 text-white shadow-sm' : 'text-slate-500 hover:text-blue-600 dark:hover:text-blue-400'}`}
+              >
+                AQUISIÇÃO
+              </button>
+              <button
+                onClick={() => setTipoObjetoFilter('Serviço')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${tipoObjetoFilter === 'Serviço' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+              >
+                SERVIÇO
+              </button>
+            </div>
 
-        {showFilters && (
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex gap-4 items-center">
-            <input 
-              type="text" 
-              placeholder="Buscar processo, objeto, stargov..." 
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full max-w-md text-slate-800 dark:text-slate-200"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar processo, objeto, stargov..."
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-64 md:w-72 h-10 transition-all focus:w-80"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  title="Limpar Busca"
+                >
+                  <Icons.X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             <select
               value={modalidadeFilter}
               onChange={(e) => setModalidadeFilter(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200"
+              className="px-4 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200"
             >
               <option value="Todas">Todas Modalidades</option>
               <option value="PREGÃO">Pregão</option>
               <option value="INEXIGIBILIDADE">Inexigibilidade</option>
             </select>
+
+            <button
+              onClick={fetchData}
+              className="px-4 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              title="Atualizar Dados"
+            >
+              <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
+            </button>
+            
+            <button
+              onClick={openNewModal}
+              className="px-4 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+            >
+              <Icons.Plus /> Novo Processo
+            </button>
           </div>
-        )}
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -289,11 +320,7 @@ export const LicitacoesView = () => {
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Localização</p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300">{item.localizacao || '-'}</p>
                               </div>
-                              <div className="flex justify-between">
-                                <div>
-                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Consultor</p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">{item.consultor || '-'}</p>
-                                </div>
+                              <div className="flex flex-col justify-center h-full">
                                 <div>
                                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data</p>
                                   <p className="text-sm text-slate-700 dark:text-slate-300">{item.data || '-'}</p>
@@ -392,8 +419,12 @@ export const LicitacoesView = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Consultor</label>
-                <input name="consultor" value={formData.consultor} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo de Objeto</label>
+                <select name="tipo_objeto" value={formData.tipo_objeto} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200">
+                  <option value="">Selecione</option>
+                  <option value="Aquisição">Aquisição</option>
+                  <option value="Serviço">Serviço</option>
+                </select>
               </div>
             </form>
             

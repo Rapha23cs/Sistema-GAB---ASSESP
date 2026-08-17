@@ -135,7 +135,7 @@ export const DUMMY_LICITACOES = [
     status: 'em_andamento',
     localizacao: 'Sede / Unidades Regionais',
     data: '15 Ago 2026',
-    consultor: 'Ana Beatriz Mendes'
+    tipo_objeto: 'Aquisição'
   },
   {
     id: 'Lic-048/2026',
@@ -150,7 +150,7 @@ export const DUMMY_LICITACOES = [
     status: 'homologada',
     localizacao: 'Unidade Prisional Central',
     data: '02 Set 2026',
-    consultor: 'Roberto Silva'
+    tipo_objeto: 'Serviço'
   }
 ];
 
@@ -158,4 +158,37 @@ export const DUMMY_TASKS = [
   { id: 'TSK-01', text: 'Atualize o status dos equipamentos no galpão central', author: 'Mariana Costa', assignee: 'Raphael S.', date: '13 Jul 2026', completed: false, priority: 'alta' },
   { id: 'TSK-02', text: 'Verificar aditivo de contrato CT-012/2026', author: 'Carlos Almeida', assignee: 'Raphael S.', date: '12 Jul 2026', completed: true, priority: 'media' },
   { id: 'TSK-03', text: 'Liberar OS #65/2026 para execução técnica', author: 'Raphael S.', assignee: 'Equipe de Manutenção', date: '13 Jul 2026', completed: false, priority: 'alta' }
+];
+
+export const DUMMY_FINANCEIRO = [
+  {
+    id: 's1_6',
+    contrato: 'CT 02/2024',
+    objeto: 'Aquisição de Licenças Microsoft',
+    sei: '12345.000001/2026-99',
+    mes: 'Ago/2026',
+    nota_fiscal: 'NF 1234',
+    valor_nf: 'R$ 15.000,00',
+    status_nf: 'RGC Emitido',
+    fonte_custeio: 'Recurso Próprio',
+    ordem_bancaria: 'OB 555666',
+    valor_ob: 'R$ 15.000,00',
+    data_pagamento: '15/08/2026',
+    status_ob: 'Pago'
+  },
+  {
+    id: 's2_2',
+    contrato: 'CT 88/2025 (MANUT)',
+    objeto: 'Manutenção de Ar Condicionado',
+    sei: '12345.000002/2026-88',
+    mes: 'Set/2026',
+    nota_fiscal: 'NF 9988',
+    valor_nf: 'R$ 2.500,00',
+    status_nf: 'Em Análise',
+    fonte_custeio: 'Fundo Estadual',
+    ordem_bancaria: 'OB 777888',
+    valor_ob: 'R$ 2.500,00',
+    data_pagamento: '10/09/2026',
+    status_ob: 'Aguardando'
+  }
 ];
