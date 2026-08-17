@@ -1,5 +1,5 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, JWT } from 'google-auth-library';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,29 +23,42 @@ export async function getDoc() {
     throw new Error('SPREADSHEET_ID não configurado corretamente no .env');
   }
 
-  let credentials;
-  if (fs.existsSync(CREDENTIALS_PATH)) {
-    credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
-  } else if (process.env.GOOGLE_CREDENTIALS) {
-    credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-  } else {
-    throw new Error('Arquivo de credenciais não encontrado e variável GOOGLE_CREDENTIALS não definida.');
+  let authClient;
+
+  // 1. Tenta usar Service Account (Preferido para Produção/Render - Não expira)
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+    authClient = new JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+  } 
+  // 2. Fallback para OAuth2 (Desenvolvimento local com token.json)
+  else {
+    let credentials;
+    if (fs.existsSync(CREDENTIALS_PATH)) {
+      credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+    } else if (process.env.GOOGLE_CREDENTIALS) {
+      credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    } else {
+      throw new Error('Configuração de Autenticação não encontrada (Nem Service Account nem OAuth2).');
+    }
+
+    let token;
+    if (fs.existsSync(TOKEN_PATH)) {
+      token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+    } else if (process.env.GOOGLE_TOKEN) {
+      token = JSON.parse(process.env.GOOGLE_TOKEN);
+    } else {
+      throw new Error('Arquivo de token não encontrado e variável GOOGLE_TOKEN não definida.');
+    }
+
+    const { client_secret, client_id } = credentials.web || credentials.installed;
+    authClient = new OAuth2Client(client_id, client_secret);
+    authClient.setCredentials(token);
   }
 
-  let token;
-  if (fs.existsSync(TOKEN_PATH)) {
-    token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
-  } else if (process.env.GOOGLE_TOKEN) {
-    token = JSON.parse(process.env.GOOGLE_TOKEN);
-  } else {
-    throw new Error('Arquivo de token não encontrado e variável GOOGLE_TOKEN não definida.');
-  }
-
-  const { client_secret, client_id } = credentials.web || credentials.installed;
-  const oAuth2Client = new OAuth2Client(client_id, client_secret);
-  oAuth2Client.setCredentials(token);
-
-  const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, oAuth2Client);
+  const doc = new GoogleSpreadsheet(process.env.SPREADSHEET_ID, authClient);
   await doc.loadInfo();
 
   cachedDoc = doc;
