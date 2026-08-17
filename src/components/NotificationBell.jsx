@@ -30,15 +30,17 @@ export const NotificationBell = ({ setActiveTab, user }) => {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        const [eqRes, contRes, tarRes] = await Promise.all([
+        const [eqRes, contRes, tarRes, finRes] = await Promise.all([
           apiFetch(`${API_URL}/api/equipamentos`),
           apiFetch(`${API_URL}/api/contratos`),
-          apiFetch(`${API_URL}/api/tarefas?t=${Date.now()}`)
+          apiFetch(`${API_URL}/api/tarefas?t=${Date.now()}`),
+          apiFetch(`${API_URL}/api/financeiro?t=${Date.now()}`)
         ]);
         
         const eqs = await eqRes.json();
         const conts = await contRes.json();
         const tarefas = await tarRes.json();
+        const financ = await finRes.json();
         
         const newAlerts = [];
         
@@ -82,16 +84,16 @@ export const NotificationBell = ({ setActiveTab, user }) => {
         }
 
         if (Array.isArray(tarefas) && user) {
-          const minhasTarefas = tarefas.filter(t => !t.completed && t.assignee === user.nome);
-          if (minhasTarefas.length > 0) {
+          const pending = tarefas.filter(t => !t.completed && t.assignee === user.nome);
+          if (pending.length > 0) {
             newAlerts.push({
-              id: 'tarefas',
+              id: 'tar_geral',
               title: 'Tarefas Pendentes',
-              desc: `Você tem ${minhasTarefas.length} tarefa(s) aguardando o seu check-out.`,
+              desc: `Há ${pending.length} tarefa(s) pendente(s) aguardando sua ação.`,
               icon: Icons.CheckSquare,
-              color: 'text-blue-500',
-              bg: 'bg-blue-50 dark:bg-blue-900/30',
-              tab: 'Colaboração'
+              color: 'text-purple-500',
+              bg: 'bg-purple-50 dark:bg-purple-900/30',
+              tab: 'Colaboracao'
             });
           }
 
@@ -105,6 +107,26 @@ export const NotificationBell = ({ setActiveTab, user }) => {
               color: 'text-emerald-500',
               bg: 'bg-emerald-50 dark:bg-emerald-900/30',
               tab: 'Colaboração'
+            });
+          }
+        }
+        
+        if (Array.isArray(financ)) {
+          const financPendentes = financ.filter(f => {
+            const snf = (f.status_nf || '').toLowerCase();
+            const sob = (f.status_ob || '').toLowerCase();
+            return snf.includes('pendente') || sob.includes('aguardando');
+          });
+          
+          if (financPendentes.length > 0) {
+            newAlerts.push({
+              id: 'fin',
+              title: 'Pendências Financeiras',
+              desc: `Há ${financPendentes.length} registro(s) financeiro(s) pendente(s) ou aguardando pagamento.`,
+              icon: Icons.Landmark,
+              color: 'text-emerald-500',
+              bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+              tab: 'Financeiro'
             });
           }
         }

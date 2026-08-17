@@ -71,6 +71,7 @@ export const DashboardView = ({ user, setActiveTab }) => {
   const [equipamentos, setEquipamentos] = useState([]);
   const [tarefas, setTarefas] = useState([]);
   const [licitacoes, setLicitacoes] = useState([]);
+  const [financeiro, setFinanceiro] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,13 +80,15 @@ export const DashboardView = ({ user, setActiveTab }) => {
       apiFetch(`${API_URL}/api/contratos`).then(res => res.json()),
       apiFetch(`${API_URL}/api/equipamentos`).then(res => res.json()),
       apiFetch(`${API_URL}/api/tarefas`).then(res => res.json()),
-      apiFetch(`${API_URL}/api/licitacoes`).then(res => res.json())
-    ]).then(([ossData, contratosData, equipamentosData, tarefasData, licitacoesData]) => {
+      apiFetch(`${API_URL}/api/licitacoes`).then(res => res.json()),
+      apiFetch(`${API_URL}/api/financeiro`).then(res => res.json())
+    ]).then(([ossData, contratosData, equipamentosData, tarefasData, licitacoesData, financeiroData]) => {
       setOss(Array.isArray(ossData) ? ossData : []);
       setContratos(Array.isArray(contratosData) ? contratosData : []);
       setEquipamentos(Array.isArray(equipamentosData) ? equipamentosData : []);
       setTarefas(Array.isArray(tarefasData) ? tarefasData : []);
       setLicitacoes(Array.isArray(licitacoesData) ? licitacoesData : []);
+      setFinanceiro(Array.isArray(financeiroData) ? financeiroData : []);
       setLoading(false);
     }).catch(err => {
       console.error(err);
@@ -234,6 +237,26 @@ export const DashboardView = ({ user, setActiveTab }) => {
         Icon: Icons.Monitor,
         color: 'text-rose-700 dark:text-rose-400',
         bg: 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/50'
+      });
+    });
+
+  const financeiroPendentes = financeiro.filter(f => {
+    const snf = (f.status_nf || '').toLowerCase();
+    const sob = (f.status_ob || '').toLowerCase();
+    return snf.includes('pendente') || sob.includes('aguardando');
+  });
+
+  [...financeiroPendentes]
+    .slice(0, 3)
+    .forEach((f, i) => {
+      atividadesRecentes.push({
+        title: `Pendência Financeira`,
+        desc: `NF: ${f.nota_fiscal || '-'} | OB: ${f.ordem_bancaria || '-'} - ${f.objeto || ''}`,
+        time: 'Alerta',
+        timestamp: Date.now() + 60000 - i, // Altíssima prioridade
+        Icon: Icons.Landmark,
+        color: 'text-emerald-700 dark:text-emerald-400',
+        bg: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50'
       });
     });
 
