@@ -8,6 +8,7 @@ import { NovaOSView } from './NovaOSView';
 import { UpdateTaskModal } from '../components/UpdateTaskModal';
 import { AddEquipmentToOSModal } from '../components/AddEquipmentToOSModal';
 import { EditOSModal } from '../components/EditOSModal';
+import toast from 'react-hot-toast';
 
 export const OrdersView = () => {
   const [orders, setOrders] = useState([]);
@@ -24,6 +25,7 @@ export const OrdersView = () => {
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [filterContract, setFilterContract] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
+  const [innerSearchTerm, setInnerSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   
   useEffect(() => {
@@ -122,6 +124,9 @@ export const OrdersView = () => {
   };
 
   const toggleRow = (id) => {
+    if (expandedRow !== id) {
+      setInnerSearchTerm('');
+    }
     setExpandedRow(expandedRow === id ? null : id);
     setEquipFilter({ rowId: null, status: null });
   };
@@ -185,7 +190,7 @@ export const OrdersView = () => {
     }
 
     if (itemsToSave.length === 0) {
-      alert("Adicione pelo menos um equipamento ou unidade à OS.");
+      toast.error("Adicione pelo menos um equipamento ou unidade à OS.");
       return;
     }
 
@@ -203,7 +208,7 @@ export const OrdersView = () => {
       setIsCreatingOS(false);
     } catch (err) {
       console.error(err);
-      alert("Erro ao criar OS.");
+      toast.error("Erro ao criar OS.");
     }
   };
 
@@ -227,7 +232,7 @@ export const OrdersView = () => {
         fetchData();
         setEditingEquipment(null);
       } else {
-        alert("Erro ao atualizar o andamento do equipamento.");
+        toast.error("Erro ao atualizar o andamento do equipamento.");
       }
     })
     .catch(err => console.error('Erro na requisição PUT:', err));
@@ -260,7 +265,7 @@ export const OrdersView = () => {
     }
     
     if (hasError) {
-      alert("Houve um erro ao atualizar um ou mais itens da OS.");
+      toast.error("Houve um erro ao atualizar um ou mais itens da OS.");
     }
     
     setEditingGlobalOS(null);
@@ -327,7 +332,7 @@ export const OrdersView = () => {
       setAddingEquipmentToOS(null);
     } catch (err) {
       console.error(err);
-      alert("Erro ao adicionar equipamentos à OS.");
+      toast.error("Erro ao adicionar equipamentos à OS.");
     }
   };
 
@@ -355,7 +360,7 @@ export const OrdersView = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert("Erro ao apagar a OS.");
+      toast.error("Erro ao apagar a OS.");
     }
   };
 
@@ -658,7 +663,18 @@ export const OrdersView = () => {
                                         </span>
                                       </div>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-3 items-center flex-wrap justify-end mt-4 sm:mt-0">
+                                      <div className="relative w-48 mr-2 hidden md:block">
+                                        <Icons.Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                        <input 
+                                          type="text" 
+                                          placeholder="Buscar equipamento..." 
+                                          value={innerSearchTerm}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => setInnerSearchTerm(e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-xl pl-8 pr-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        />
+                                      </div>
                                       <button 
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -690,7 +706,17 @@ export const OrdersView = () => {
                                   </div>
                                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pl-8">
                                     {(() => {
-                                      const sortedEquipamentos = [...order.equipamentos].sort((a, b) => {
+                                      const filteredAndSortedEquipamentos = [...order.equipamentos].filter(eq => {
+                                        if (!innerSearchTerm) return true;
+                                        const term = innerSearchTerm.toLowerCase();
+                                        return (
+                                          (eq.nome && eq.nome.toLowerCase().includes(term)) ||
+                                          (eq.unidade && eq.unidade.toLowerCase().includes(term)) ||
+                                          (eq.numero_serie && eq.numero_serie.toLowerCase().includes(term)) ||
+                                          (eq.modelo && eq.modelo.toLowerCase().includes(term)) ||
+                                          (eq.tarefa && eq.tarefa.toLowerCase().includes(term))
+                                        );
+                                      }).sort((a, b) => {
                                         if (equipFilter.rowId !== rowId || !equipFilter.status) return 0;
                                         
                                         const statusA = (a.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, '_');
@@ -711,7 +737,11 @@ export const OrdersView = () => {
                                         return 0;
                                       });
                                       
-                                      return sortedEquipamentos.map((eq, i) => (
+                                      if (filteredAndSortedEquipamentos.length === 0 && innerSearchTerm) {
+                                        return <div className="text-sm text-slate-500 dark:text-slate-400 py-4 col-span-2">Nenhum equipamento encontrado para "{innerSearchTerm}".</div>;
+                                      }
+                                      
+                                      return filteredAndSortedEquipamentos.map((eq, i) => (
                                         <div key={eq.id || i} className={`p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col gap-3 relative overflow-hidden transition-all duration-500 ${
                                           equipFilter.rowId === rowId && equipFilter.status 
                                             ? (

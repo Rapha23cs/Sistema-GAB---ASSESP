@@ -20,7 +20,10 @@ const parseDateOutside = (dStr) => {
   return 0;
 };
 
-export const NotificationBell = ({ setActiveTab, user }) => {
+import { useAuth } from '../contexts/AuthContext';
+
+export const NotificationBell = ({ setActiveTab }) => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);

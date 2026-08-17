@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/Icons';
 import { apiFetch, API_URL } from '../config';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
-export const SettingsView = ({ user, isDark, setIsDark, onLogout }) => {
+export const SettingsView = () => {
+  const { user, logout, updateUser } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState(false);
 
@@ -40,7 +44,7 @@ export const SettingsView = ({ user, isDark, setIsDark, onLogout }) => {
           sessionStorage.setItem('token', data.token);
           sessionStorage.setItem('user', JSON.stringify(data.user));
         }
-        if (onUpdateUser) onUpdateUser(data.user);
+        updateUser(data.user);
         setIsEditing(false);
       } else {
         setSaveError(data.error || 'Erro ao salvar perfil.');
@@ -148,7 +152,7 @@ export const SettingsView = ({ user, isDark, setIsDark, onLogout }) => {
 
           <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
             <button
-              onClick={onLogout}
+              onClick={logout}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold rounded-xl transition-colors cursor-pointer border border-rose-200 dark:border-rose-500/30"
             >
               <Icons.LogOut className="w-5 h-5" />
@@ -172,7 +176,7 @@ export const SettingsView = ({ user, isDark, setIsDark, onLogout }) => {
               </div>
 
               <button
-                onClick={() => setIsDark(!isDark)}
+                onClick={toggleTheme}
                 className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${isDark ? 'bg-blue-600' : 'bg-slate-300'}`}
                 role="switch"
                 aria-checked={isDark}

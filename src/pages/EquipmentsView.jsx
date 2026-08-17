@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { ContractBadge, EqStatusBadge } from '../components/Badges';
 import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
+import toast from 'react-hot-toast';
 
 export const EquipmentsView = () => {
   const [filterTypes, setFilterTypes] = useState([]);
@@ -114,11 +115,11 @@ export const EquipmentsView = () => {
         setIsModalOpen(false);
         setEditingId(null);
       } else {
-        alert('Erro ao salvar o equipamento. Verifique os campos.');
+        toast.error('Erro ao salvar o equipamento. Verifique os campos.');
       }
     } catch (err) {
       console.error(err);
-      alert('Erro ao se comunicar com a API');
+      toast.error('Erro ao se comunicar com a API');
     }
   };
 
@@ -142,7 +143,7 @@ export const EquipmentsView = () => {
 
   const generatePDFDraft = () => {
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return alert('Por favor, permita pop-ups para gerar o PDF.');
+    if (!printWindow) return toast.error('Por favor, permita pop-ups para gerar o PDF.');
 
     const dateStr = new Date().toLocaleString('pt-BR');
     

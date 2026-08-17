@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
+import toast from 'react-hot-toast';
 import { apiFetch, API_URL } from '../config';
 
-export const AdminUsersView = ({ user }) => {
+import { useAuth } from '../contexts/AuthContext';
+
+export const AdminUsersView = () => {
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const isAdmin = user?.role === 'Admin';
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +42,7 @@ export const AdminUsersView = ({ user }) => {
       // Update state locally
       setUsers(users.map(u => u.id === userId ? { ...u, status: 'Aprovado' } : u));
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setActionLoading(null);
     }
@@ -56,7 +60,7 @@ export const AdminUsersView = ({ user }) => {
 
       setUsers(users.filter(u => u.id !== userId));
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setActionLoading(null);
     }

@@ -2,6 +2,7 @@ import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
+import toast from 'react-hot-toast';
 
 export const FinanceiroView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
@@ -46,6 +47,11 @@ export const FinanceiroView = () => {
 
   useEffect(() => {
     fetchData();
+    const highlightFin = sessionStorage.getItem('searchFin');
+    if (highlightFin) {
+      setSearchTerm(highlightFin);
+      sessionStorage.removeItem('searchFin');
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -101,7 +107,7 @@ export const FinanceiroView = () => {
       setIsModalOpen(false);
       fetchData();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

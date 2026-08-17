@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
+import toast from 'react-hot-toast';
 import { API_URL, apiFetch } from '../config';
 
-export const ColaboracaoView = ({ user }) => {
+import { useAuth } from '../contexts/AuthContext';
+
+export const ColaboracaoView = () => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [activeUsers, setActiveUsers] = useState([]);
   const [newTask, setNewTask] = useState('');
@@ -90,7 +94,7 @@ export const ColaboracaoView = ({ user }) => {
     e.preventDefault();
     if (!newTask.trim()) return;
     if (!selectedAssignee) {
-      alert("Por favor, selecione para quem esta tarefa será atribuída.");
+      toast.error("Por favor, selecione para quem esta tarefa será atribuída.");
       return;
     }
     
@@ -122,7 +126,7 @@ export const ColaboracaoView = ({ user }) => {
       fetchTasks();
     } catch (error) {
       console.error(error);
-      alert('Erro ao criar tarefa');
+      toast.error('Erro ao criar tarefa');
       fetchTasks();
     }
   };

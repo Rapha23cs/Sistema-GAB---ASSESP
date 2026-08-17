@@ -2,6 +2,7 @@ import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
+import toast from 'react-hot-toast';
 
 export const ContratosView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
@@ -32,7 +33,7 @@ export const ContratosView = () => {
         } else {
           console.error('API retornou erro:', data);
           setContratos([]);
-          alert(`Erro do Backend: ${data.error || 'Verifique o terminal do servidor'}`);
+          toast.error(`Erro do Backend: ${data.error || 'Verifique o terminal do servidor'}`);
         }
         setIsLoading(false);
       })
@@ -105,11 +106,11 @@ export const ContratosView = () => {
         setEditingId(null);
         setFormData(initialFormState);
       } else {
-        alert('Erro ao salvar contrato. Verifique os campos.');
+        toast.error('Erro ao salvar contrato. Verifique os campos.');
       }
     } catch (err) {
       console.error(err);
-      alert('Erro na requisição');
+      toast.error('Erro na requisição');
     }
   };
 
@@ -123,7 +124,7 @@ export const ContratosView = () => {
       }
     } catch (err) {
       console.error(err);
-      alert('Erro ao excluir');
+      toast.error('Erro ao excluir');
     }
   };
 

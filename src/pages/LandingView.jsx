@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/Icons';
+import { useTheme } from '../contexts/ThemeContext';
 
-export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) => {
+export const LandingView = ({ onOpenLogin, onOpenRegister }) => {
+  const { isDark, toggleTheme } = useTheme();
+
   // Tema dinâmico integrando as cores GAB (Dark e Gold)
   const theme = {
     bg: isDark ? "bg-gab-dark text-slate-200" : "bg-slate-50 text-gab-dark",
@@ -53,7 +56,7 @@ export const LandingView = ({ isDark, setIsDark, onOpenLogin, onOpenRegister }) 
 
         <div className="flex items-center gap-2 sm:gap-4">
           <button
-            onClick={() => setIsDark(!isDark)}
+            onClick={toggleTheme}
             className={`p-2 rounded-xl transition-colors ${isDark ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
             title="Alternar Tema"
           >

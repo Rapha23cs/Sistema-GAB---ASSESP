@@ -1,4 +1,6 @@
-import React, { useState, useEffect, Component } from 'react';
+import React, { Component } from 'react';
+import { Routes, Route, NavLink, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { Icons } from './components/Icons';
 import { OrdersView } from './pages/OrdersView';
 import { EquipmentsView } from './pages/EquipmentsView';
@@ -13,6 +15,8 @@ import { AdminUsersView } from './pages/AdminUsersView';
 import { GlobalSearch } from './components/GlobalSearch';
 import { NotificationBell } from './components/NotificationBell';
 import { SettingsView } from './pages/SettingsView';
+import { useAuth } from './contexts/AuthContext';
+import { useTheme } from './contexts/ThemeContext';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -41,64 +45,59 @@ class ErrorBoundary extends Component {
   }
 }
 
-// Reusable SVG Icons
+// Helper para Auth Flow (Landing, Login, Register) para não poluir o App Main
+function AuthFlow() {
+  const [showAuthFlow, setShowAuthFlow] = React.useState(false);
+  const [initialAuthMode, setInitialAuthMode] = React.useState('login');
+
+  return (
+    <div className="relative">
+      <LandingView 
+        onOpenLogin={() => { setInitialAuthMode('login'); setShowAuthFlow(true); }}
+        onOpenRegister={() => { setInitialAuthMode('register'); setShowAuthFlow(true); }}
+      />
+      {showAuthFlow && (
+        <LoginView 
+          onBack={() => setShowAuthFlow(false)}
+          initialMode={initialAuthMode}
+        />
+      )}
+    </div>
+  );
+}
 
 /* --- MAIN APP --- */
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!(localStorage.getItem('token') || sessionStorage.getItem('token')));
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null'));
-  const [showAuthFlow, setShowAuthFlow] = useState(false);
-  const [initialAuthMode, setInitialAuthMode] = useState('login');
-  const [activeTab, setActiveTab] = useState('Dashboard'); // Starts with Dashboard
+  const { isAuthenticated, user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
-  const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    setIsAuthenticated(false);
-    setUser(null);
-    setActiveTab('Dashboard');
+  // Helper para nome da rota atual
+  const getActiveTabName = () => {
+    const path = location.pathname.substring(1);
+    const routeMap = {
+      '': 'Dashboard',
+      'dashboard': 'Dashboard',
+      'ordens': 'Ordens',
+      'equipamentos': 'Equipamentos',
+      'contratos': 'Contratos',
+      'licitacoes': 'Licitações',
+      'financeiro': 'Financeiro',
+      'colaboracao': 'Colaboração',
+      'usuarios': 'Usuários',
+      'configuracoes': 'Configurações'
+    };
+    return routeMap[path] || 'Página Não Encontrada';
   };
+
+  const activeTab = getActiveTabName();
 
   if (!isAuthenticated) {
     return (
       <ErrorBoundary>
-        <div className="relative">
-          <LandingView 
-            isDark={isDark}
-            setIsDark={setIsDark}
-            onOpenLogin={() => { setInitialAuthMode('login'); setShowAuthFlow(true); }}
-            onOpenRegister={() => { setInitialAuthMode('register'); setShowAuthFlow(true); }}
-          />
-          {showAuthFlow && (
-            <LoginView 
-              onLogin={(userData) => {
-                setUser(userData);
-                setIsAuthenticated(true);
-                setShowAuthFlow(false);
-                setActiveTab('Dashboard');
-              }} 
-              onBack={() => setShowAuthFlow(false)}
-              initialMode={initialAuthMode}
-              isDark={isDark}
-            />
-          )}
-        </div>
+        <AuthFlow />
       </ErrorBoundary>
     );
   }
@@ -142,18 +141,19 @@ export default function App() {
                 default: IconComponent = Icons.Home;
               }
 
+              const path = item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
               return (
-                <button
+                <NavLink
+                  to={`/${path}`}
                   key={item}
-                  onClick={() => setActiveTab(item)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive
+                  className={({ isActive }) => `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive
                     ? 'bg-blue-50 dark:bg-gab-gold/10 text-blue-800 dark:text-gab-gold font-semibold shadow-sm border border-blue-100 dark:border-gab-gold/20'
                     : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gab-dark hover:text-slate-800 dark:hover:text-slate-200'
-                    } cursor-pointer`}
+                    }`}
                 >
                   <IconComponent />
                   {item}
-                </button>
+                </NavLink>
               )
             })}
           </nav>
@@ -165,14 +165,17 @@ export default function App() {
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.role === 'Admin' ? 'Administrador' : 'Usuário'}</p>
             </div>
             <button 
-              onClick={() => setIsDark(!isDark)}
+              onClick={toggleTheme}
               className="text-slate-400 hover:text-yellow-500 transition-colors cursor-pointer p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
               title="Alternar Tema"
             >
               {isDark ? <Icons.Sun /> : <Icons.Moon />}
             </button>
             <button 
-              onClick={handleLogout}
+              onClick={() => {
+                logout();
+                navigate('/');
+              }}
               className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-slate-700"
               title="Encerrar sessão"
             >
@@ -192,27 +195,41 @@ export default function App() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{activeTab}</h1>
 
             <div className="flex items-center gap-6">
-              <GlobalSearch setActiveTab={setActiveTab} />
-              <NotificationBell setActiveTab={setActiveTab} user={user} />
+              <GlobalSearch setActiveTab={(tab) => {
+                const path = tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                navigate(`/${path}`);
+              }} />
+              <NotificationBell setActiveTab={(tab) => {
+                const path = tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                navigate(`/${path}`);
+              }} />
             </div>
           </header>
 
+          <Toaster position="top-right" />
+
           {/* Dynamic View Rendering based on active tab */}
           <div className="p-8 flex-1 z-0 relative">
-            {activeTab === 'Dashboard' && <DashboardView user={user} setActiveTab={setActiveTab} />}
-            {activeTab === 'Ordens' && <OrdersView />}
-            {activeTab === 'Equipamentos' && <EquipmentsView />}
-            {activeTab === 'Contratos' && <ContratosView />}
-            {activeTab === 'Licitações' && <LicitacoesView />}
-            {activeTab === 'Financeiro' && <FinanceiroView />}
-            {activeTab === 'Colaboração' && <ColaboracaoView user={user} />}
-            {activeTab === 'Usuários' && <AdminUsersView user={user} />}
-            {activeTab === 'Configurações' && <SettingsView user={user} isDark={isDark} setIsDark={setIsDark} onLogout={handleLogout} onUpdateUser={setUser} />}
-            {(activeTab !== 'Dashboard' && activeTab !== 'Ordens' && activeTab !== 'Equipamentos' && activeTab !== 'Contratos' && activeTab !== 'Licitações' && activeTab !== 'Financeiro' && activeTab !== 'Colaboração' && activeTab !== 'Usuários' && activeTab !== 'Configurações') && (
-              <div className="flex items-center justify-center h-full text-zinc-500">
-                Módulo "{activeTab}" em desenvolvimento...
-              </div>
-            )}
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardView setActiveTab={(tab) => {
+                const path = tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                navigate(`/${path}`);
+              }} />} />
+              <Route path="/ordens" element={<OrdersView />} />
+              <Route path="/equipamentos" element={<EquipmentsView />} />
+              <Route path="/contratos" element={<ContratosView />} />
+              <Route path="/licitacoes" element={<LicitacoesView />} />
+              <Route path="/financeiro" element={<FinanceiroView />} />
+              <Route path="/colaboracao" element={<ColaboracaoView />} />
+              <Route path="/usuarios" element={<AdminUsersView />} />
+              <Route path="/configuracoes" element={<SettingsView />} />
+              <Route path="*" element={
+                <div className="flex items-center justify-center h-full text-zinc-500">
+                  Módulo "{activeTab}" não encontrado.
+                </div>
+              } />
+            </Routes>
           </div>
         </main>
       </div>

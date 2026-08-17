@@ -2,6 +2,7 @@ import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
+import toast from 'react-hot-toast';
 
 export const LicitacoesView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
@@ -40,6 +41,11 @@ export const LicitacoesView = () => {
 
   useEffect(() => {
     fetchData();
+    const highlightLic = sessionStorage.getItem('searchLic');
+    if (highlightLic) {
+      setSearchTerm(highlightLic);
+      sessionStorage.removeItem('searchLic');
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -89,7 +95,7 @@ export const LicitacoesView = () => {
       setIsModalOpen(false);
       fetchData();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

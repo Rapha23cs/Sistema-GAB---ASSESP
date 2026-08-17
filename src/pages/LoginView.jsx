@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icons } from '../components/Icons';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
-export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) => {
+export const LoginView = ({ onBack, initialMode = 'login' }) => {
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
+  
+  const { login } = useAuth();
+  const { isDark } = useTheme();
+  const navigate = useNavigate();
   
   // Login State
   const [email, setEmail] = useState('');
@@ -45,7 +52,8 @@ export const LoginView = ({ onLogin, onBack, initialMode = 'login', isDark }) =>
           sessionStorage.setItem('user', JSON.stringify(data.user));
         }
         
-        onLogin(data.user);
+        login(data.user, data.token);
+        navigate('/dashboard');
       } else {
         // Register
         const response = await fetch(`${import.meta.env.PROD ? 'https://sistema-gab-assesp.onrender.com' : 'http://localhost:3001'}/api/auth/register`, {

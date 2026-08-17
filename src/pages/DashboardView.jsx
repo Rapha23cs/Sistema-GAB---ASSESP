@@ -2,6 +2,7 @@ import { apiFetch } from '../config';
 import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
+import toast from 'react-hot-toast';
 
 const norm = str => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
@@ -61,7 +62,10 @@ const getStatusGrouped = (ossArray) => {
   return groupedOrders;
 };
 
-export const DashboardView = ({ user, setActiveTab }) => {
+import { useAuth } from '../contexts/AuthContext';
+
+export const DashboardView = ({ setActiveTab }) => {
+  const { user } = useAuth();
   const [modalState, setModalState] = useState({ isOpen: false, type: null });
   const [osFilter, setOsFilter] = useState('todos');
   const [equipFilter, setEquipFilter] = useState('todos');
@@ -194,7 +198,9 @@ export const DashboardView = ({ user, setActiveTab }) => {
         timestamp: parseDateBr(o.data_tarefa) || Date.now(),
         Icon: o.statusGlobal === 'concluido' ? Icons.CheckCircle : Icons.Wrench,
         color: o.statusGlobal === 'concluido' ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400',
-        bg: o.statusGlobal === 'concluido' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50'
+        bg: o.statusGlobal === 'concluido' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50',
+        tab: 'Ordens',
+        filterKey: o.ordem_servico
       });
     });
 
@@ -208,7 +214,9 @@ export const DashboardView = ({ user, setActiveTab }) => {
         timestamp: parseDateBr(l.data) || (Date.now() - i * 100000),
         Icon: Icons.Landmark,
         color: 'text-purple-700 dark:text-purple-400',
-        bg: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800/50'
+        bg: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800/50',
+        tab: 'Licitações',
+        filterKey: l.processo_original || l.stargov
       });
     });
 
@@ -222,7 +230,9 @@ export const DashboardView = ({ user, setActiveTab }) => {
         timestamp: Date.now() + 100000 - i, // Alta prioridade
         Icon: Icons.AlertCircle,
         color: 'text-amber-700 dark:text-amber-400',
-        bg: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50'
+        bg: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50',
+        tab: 'Contratos',
+        filterKey: c.numero_contrato || c.processo
       });
     });
 
@@ -236,7 +246,9 @@ export const DashboardView = ({ user, setActiveTab }) => {
         timestamp: Date.now() + 50000 - i, // Alta prioridade
         Icon: Icons.Monitor,
         color: 'text-rose-700 dark:text-rose-400',
-        bg: 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/50'
+        bg: 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/50',
+        tab: 'Equipamentos',
+        filterKey: e.numero_serie || e.equipamento
       });
     });
 
@@ -256,7 +268,9 @@ export const DashboardView = ({ user, setActiveTab }) => {
         timestamp: Date.now() + 60000 - i, // Altíssima prioridade
         Icon: Icons.Landmark,
         color: 'text-emerald-700 dark:text-emerald-400',
-        bg: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50'
+        bg: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50',
+        tab: 'Financeiro',
+        filterKey: f.nota_fiscal || f.ordem_bancaria
       });
     });
 
@@ -272,7 +286,7 @@ export const DashboardView = ({ user, setActiveTab }) => {
 
   const generateGeneralReportDraft = () => {
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return alert('Por favor, permita pop-ups para gerar o PDF.');
+    if (!printWindow) return toast.error('Por favor, permita pop-ups para gerar o PDF.');
 
     const dateStr = new Date().toLocaleString('pt-BR');
     
@@ -476,7 +490,19 @@ export const DashboardView = ({ user, setActiveTab }) => {
           </div>
           <div className={`space-y-6 flex-1 ${showAllActivities ? 'overflow-y-auto pr-2 custom-scrollbar' : ''}`}>
             {atividadesRecentes.length > 0 ? (showAllActivities ? atividadesRecentes : atividadesRecentes.slice(0, 4)).map((activity, i) => (
-              <div key={i} className="flex gap-4 group">
+              <div 
+                key={i} 
+                onClick={() => {
+                  if (!activity.tab || !setActiveTab) return;
+                  if (activity.tab === 'Ordens' && activity.filterKey) sessionStorage.setItem('searchOS', activity.filterKey);
+                  if (activity.tab === 'Contratos' && activity.filterKey) sessionStorage.setItem('searchContract', activity.filterKey);
+                  if (activity.tab === 'Equipamentos' && activity.filterKey) sessionStorage.setItem('searchEquip', activity.filterKey);
+                  if (activity.tab === 'Licitações' && activity.filterKey) sessionStorage.setItem('searchLic', activity.filterKey);
+                  if (activity.tab === 'Financeiro' && activity.filterKey) sessionStorage.setItem('searchFin', activity.filterKey);
+                  setActiveTab(activity.tab);
+                }}
+                className="flex gap-4 group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 -mx-2 rounded-xl transition-colors"
+              >
                 <div className={`mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0 border shadow-sm ${activity.bg} ${activity.color}`}>
                   <activity.Icon />
                 </div>
