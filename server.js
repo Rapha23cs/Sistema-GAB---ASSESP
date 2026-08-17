@@ -43,7 +43,7 @@ app.use('/api/tarefas', cacheMiddleware, tarefasRoutes);
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Redirecionar todas as outras requisições (não-API) para o React (SPA Routing)
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
