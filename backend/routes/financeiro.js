@@ -16,6 +16,9 @@ const getSheetByContrato = async (contrato) => {
   } else if (contrato === 'CT 88/2025 (PEÇAS)') {
     sheet = doc.sheetsByTitle['Financeiro CT 88/2025 (PEÇAS)'];
     if (sheet) await sheet.loadHeaderRow(1);
+  } else {
+    sheet = doc.sheetsByTitle['Financeiro Geral'];
+    if (sheet) await sheet.loadHeaderRow(7);
   }
   return sheet;
 };
@@ -26,17 +29,27 @@ router.get('/', async (req, res) => {
     const s1 = doc.sheetsByTitle['Financeiro CT 02/2024'];
     const s2 = doc.sheetsByTitle['Financeiro CT 88/2025 (MANUT)'];
     const s3 = doc.sheetsByTitle['Financeiro CT 88/2025 (PEÇAS)'];
+    const s4 = doc.sheetsByTitle['Financeiro Geral'];
     let financeiro = [];
 
-    const mapRow = (row, sheetId, contrato) => ({
-      id: `${sheetId}_${row.rowNumber}`,
-      contrato,
-      objeto: row.get('OBJETO'), sei: row.get('SEI'), mes: row.get('MÊS'),
-      nota_fiscal: row.get('NOTA FISCAL'), valor_nf: row.get('VALOR NF'),
-      status_nf: row.get('STATUS NF (RFC/RGC)'), fonte_custeio: row.get('FONTE DE CUSTEIO'),
-      ordem_bancaria: row.get('ORDEM BANCÁRIA'), valor_ob: row.get('VALOR OB'),
-      data_pagamento: row.get('DATA DO PAGAMENTO'), status_ob: row.get('STATUS OB')
-    });
+    const mapRow = (row, sheetId, contratoParam) => {
+      const isGeral = sheetId === 's4';
+      return {
+        id: `${sheetId}_${row.rowNumber}`,
+        contrato: isGeral ? row.get('CONTRATO') : contratoParam,
+        objeto: row.get('OBJETO'), 
+        sei: row.get('SEI'), 
+        mes: isGeral ? '' : row.get('MÊS'),
+        nota_fiscal: row.get('NOTA FISCAL'), 
+        valor_nf: row.get('VALOR NF'),
+        status_nf: row.get('STATUS NF (RFC/RGC)'), 
+        fonte_custeio: row.get('FONTE DE CUSTEIO'),
+        ordem_bancaria: row.get('ORDEM BANCÁRIA'), 
+        valor_ob: row.get('VALOR OB'),
+        data_pagamento: row.get('DATA DO PAGAMENTO'), 
+        status_ob: row.get('STATUS OB')
+      };
+    };
 
     if (s1) {
       await s1.loadHeaderRow(5);
@@ -52,6 +65,11 @@ router.get('/', async (req, res) => {
       await s3.loadHeaderRow(1);
       const r3 = await s3.getRows();
       financeiro = financeiro.concat(r3.filter(row => row.get('OBJETO')).map(row => mapRow(row, 's3', 'CT 88/2025 (PEÇAS)')));
+    }
+    if (s4) {
+      await s4.loadHeaderRow(7);
+      const r4 = await s4.getRows();
+      financeiro = financeiro.concat(r4.filter(row => row.get('OBJETO')).map(row => mapRow(row, 's4', '')));
     }
 
     res.json(financeiro.reverse());
@@ -70,15 +88,23 @@ router.post('/', async (req, res) => {
     const mutex = getSheetMutex(sheet.title);
     const release = await mutex.acquire();
     try {
+      const isGeral = !['CT 02/2024', 'CT 88/2025 (MANUT)', 'CT 88/2025 (PEÇAS)'].includes(data.contrato);
+      const rowData = {
+        'OBJETO': data.objeto, 'SEI': data.sei,
+        'NOTA FISCAL': data.nota_fiscal, 'VALOR NF': data.valor_nf,
+        'STATUS NF (RFC/RGC)': data.status_nf, 'FONTE DE CUSTEIO': data.fonte_custeio,
+        'ORDEM BANCÁRIA': data.ordem_bancaria, 'VALOR OB': data.valor_ob,
+        'DATA DO PAGAMENTO': data.data_pagamento, 'STATUS OB': data.status_ob
+      };
+      
+      if (isGeral) {
+        rowData['CONTRATO'] = data.contrato;
+      } else {
+        rowData['MÊS'] = data.mes;
+      }
 
-    const newRow = await sheet.addRow({
-      'OBJETO': data.objeto, 'SEI': data.sei, 'MÊS': data.mes,
-      'NOTA FISCAL': data.nota_fiscal, 'VALOR NF': data.valor_nf,
-      'STATUS NF (RFC/RGC)': data.status_nf, 'FONTE DE CUSTEIO': data.fonte_custeio,
-      'ORDEM BANCÁRIA': data.ordem_bancaria, 'VALOR OB': data.valor_ob,
-      'DATA DO PAGAMENTO': data.data_pagamento, 'STATUS OB': data.status_ob
-    });
-      const sheetId = data.contrato === 'CT 02/2024' ? 's1' : (data.contrato === 'CT 88/2025 (MANUT)' ? 's2' : 's3');
+      const newRow = await sheet.addRow(rowData);
+      const sheetId = isGeral ? 's4' : (data.contrato === 'CT 02/2024' ? 's1' : (data.contrato === 'CT 88/2025 (MANUT)' ? 's2' : 's3'));
       res.status(201).json({ id: `${sheetId}_${newRow.rowNumber}`, ...data });
     } finally {
       release();
@@ -101,25 +127,31 @@ router.put('/:id', async (req, res) => {
     const mutex = getSheetMutex(sheet.title);
     const release = await mutex.acquire();
     try {
+      const rows = await sheet.getRows();
+      const row = rows.find(r => r.rowNumber === rowNumber);
+      if (!row) return res.status(404).json({ error: 'Registro não encontrado' });
 
-    const rows = await sheet.getRows();
-    const row = rows.find(r => r.rowNumber === rowNumber);
-    if (!row) return res.status(404).json({ error: 'Registro não encontrado' });
+      const isGeral = !['CT 02/2024', 'CT 88/2025 (MANUT)', 'CT 88/2025 (PEÇAS)'].includes(data.contrato);
 
-    row.set('OBJETO', data.objeto);
-    row.set('SEI', data.sei);
-    row.set('MÊS', data.mes);
-    row.set('NOTA FISCAL', data.nota_fiscal);
-    row.set('VALOR NF', data.valor_nf);
-    row.set('STATUS NF (RFC/RGC)', data.status_nf);
-    row.set('FONTE DE CUSTEIO', data.fonte_custeio);
-    row.set('ORDEM BANCÁRIA', data.ordem_bancaria);
-    row.set('VALOR OB', data.valor_ob);
-    row.set('DATA DO PAGAMENTO', data.data_pagamento);
-    row.set('STATUS OB', data.status_ob);
+      row.set('OBJETO', data.objeto);
+      row.set('SEI', data.sei);
+      row.set('NOTA FISCAL', data.nota_fiscal);
+      row.set('VALOR NF', data.valor_nf);
+      row.set('STATUS NF (RFC/RGC)', data.status_nf);
+      row.set('FONTE DE CUSTEIO', data.fonte_custeio);
+      row.set('ORDEM BANCÁRIA', data.ordem_bancaria);
+      row.set('VALOR OB', data.valor_ob);
+      row.set('DATA DO PAGAMENTO', data.data_pagamento);
+      row.set('STATUS OB', data.status_ob);
 
-    await row.save();
-    res.json({ id, ...data });
+      if (isGeral) {
+        row.set('CONTRATO', data.contrato);
+      } else {
+        row.set('MÊS', data.mes);
+      }
+
+      await row.save();
+      res.json({ id, ...data });
     } finally {
       release();
     }
@@ -141,13 +173,12 @@ router.delete('/:id', async (req, res) => {
     const mutex = getSheetMutex(sheet.title);
     const release = await mutex.acquire();
     try {
+      const rows = await sheet.getRows();
+      const row = rows.find(r => r.rowNumber === rowNumber);
+      if (!row) return res.status(404).json({ error: 'Registro não encontrado' });
 
-    const rows = await sheet.getRows();
-    const row = rows.find(r => r.rowNumber === rowNumber);
-    if (!row) return res.status(404).json({ error: 'Registro não encontrado' });
-
-    await row.delete();
-    res.json({ success: true });
+      await row.delete();
+      res.json({ success: true });
     } finally {
       release();
     }

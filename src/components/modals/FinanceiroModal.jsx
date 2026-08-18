@@ -25,12 +25,20 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contrato *</label>
-                  <select name="contrato" value={formData.contrato} onChange={handleInputChange} required className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                    <option value="">Selecione um contrato...</option>
-                    <option value="CT 02/2024">CT 02/2024</option>
-                    <option value="CT 88/2025 (MANUT)">CT 88/2025 (MANUT)</option>
-                    <option value="CT 88/2025 (PEÇAS)">CT 88/2025 (PEÇAS)</option>
-                  </select>
+                  <input 
+                    name="contrato" 
+                    list="contratos-list" 
+                    value={formData.contrato} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder="Selecione ou digite um contrato..." 
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" 
+                  />
+                  <datalist id="contratos-list">
+                    <option value="CT 02/2024" />
+                    <option value="CT 88/2025 (MANUT)" />
+                    <option value="CT 88/2025 (PEÇAS)" />
+                  </datalist>
                 </div>
 
                 <div>
@@ -39,10 +47,12 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mês</label>
-                    <input name="mes" value={formData.mes} onChange={handleInputChange} type="text" placeholder="Ex: Ago/2026" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
-                  </div>
+                  {['CT 02/2024', 'CT 88/2025 (MANUT)', 'CT 88/2025 (PEÇAS)'].includes(formData.contrato) && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mês</label>
+                      <input name="mes" value={formData.mes} onChange={handleInputChange} type="text" placeholder="Ex: Ago/2026" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Processo SEI</label>
                     <input name="sei" value={formData.sei} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />

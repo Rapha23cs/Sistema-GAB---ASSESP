@@ -19,9 +19,11 @@ export const apiFetch = async (url, options = {}) => {
   });
 
   if (response.status === 401 || response.status === 403) {
-    // Optionally handle token expiration by forcing logout
-    // localStorage.removeItem('token');
-    // window.location.reload();
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    window.location.reload();
   }
 
   return response;

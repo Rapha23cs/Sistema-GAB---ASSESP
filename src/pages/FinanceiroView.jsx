@@ -210,7 +210,7 @@ export const FinanceiroView = () => {
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Todos os Contratos</span>
                     </label>
                   </div>
-                  {['CT 02/2024', 'CT 88/2025 (MANUT)', 'CT 88/2025 (PEÇAS)'].map(c => (
+                  {Array.from(new Set(financeiroData.map(item => item.contrato).filter(Boolean))).sort().map(c => (
                     <div key={c} className="px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input 
