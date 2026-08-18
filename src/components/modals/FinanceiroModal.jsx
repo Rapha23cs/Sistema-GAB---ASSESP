@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../Icons';
+import { apiFetch, API_URL } from '../../config';
 
 export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInputChange, editingId }) => {
+  const [contratosOptions, setContratosOptions] = useState([]);
+  
+  useEffect(() => {
+    if (isOpen) {
+      apiFetch(`${API_URL}/api/contratos?t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            // Extrai a lista de processos ou numeros dos contratos e remove duplicatas/vazios
+            const options = Array.from(new Set(data.map(c => c.numero_contrato || c.processo).filter(Boolean))).sort();
+            setContratosOptions(options);
+          }
+        })
+        .catch(err => console.error('Erro ao buscar contratos para o modal:', err));
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -33,9 +51,13 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   >
                     <option value="" disabled>Selecione um contrato...</option>
-                    <option value="CT 02/2024">CT 02/2024</option>
-                    <option value="CT 88/2025 (MANUT)">CT 88/2025 (MANUT)</option>
-                    <option value="CT 88/2025 (PEÇAS)">CT 88/2025 (PEÇAS)</option>
+                    {contratosOptions.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                    {/* Caso o contrato já exista no formData mas não esteja na lista retornada pela API */}
+                    {formData.contrato && !contratosOptions.includes(formData.contrato) && (
+                      <option value={formData.contrato}>{formData.contrato}</option>
+                    )}
                   </select>
                 </div>
 
