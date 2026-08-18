@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDoc } from '../googleSheets.js';
+import { getSheetMutex } from '../utils/mutex.js';
 
 const router = express.Router();
 
@@ -47,9 +48,12 @@ router.post('/', async (req, res) => {
   const data = req.body;
 
   try {
-    const doc = await getDoc();
-    let sheet = doc.sheetsByTitle['Contratos - PPMA'];
-    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
+    const mutex = getSheetMutex('Contratos - PPMA');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      let sheet = doc.sheetsByTitle['Contratos - PPMA'];
+      if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
 
     await sheet.loadHeaderRow(5);
 
@@ -75,6 +79,9 @@ router.post('/', async (req, res) => {
 
     const contrato = { ...data, id: newRow.rowNumber };
     res.status(201).json(contrato);
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro POST Contratos:', error);
     res.status(500).json({ error: error.message });
@@ -86,9 +93,12 @@ router.put('/:id', async (req, res) => {
   const data = req.body;
 
   try {
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Contratos - PPMA'];
-    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
+    const mutex = getSheetMutex('Contratos - PPMA');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Contratos - PPMA'];
+      if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
 
     await sheet.loadHeaderRow(5);
     const rows = await sheet.getRows();
@@ -119,6 +129,9 @@ router.put('/:id', async (req, res) => {
     await rowToUpdate.save();
 
     res.json({ ...data, id: rowToUpdate.rowNumber });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro PUT Contratos:', error);
     res.status(500).json({ error: error.message });
@@ -134,13 +147,24 @@ router.delete('/:id', async (req, res) => {
     if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
 
     await sheet.loadHeaderRow(5);
-    const rows = await sheet.getRows();
-    const rowToDelete = rows.find(r => r.rowNumber === parseInt(id));
+    const mutex = getSheetMutex('Contratos - PPMA');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Contratos - PPMA'];
+      if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
 
-    if (!rowToDelete) return res.status(404).json({ error: 'Contrato não encontrado na planilha' });
+      await sheet.loadHeaderRow(5);
+      const rows = await sheet.getRows();
+      const rowToDelete = rows.find(r => r.rowNumber === parseInt(id));
 
-    await rowToDelete.delete();
-    res.json({ message: 'Contrato deletado com sucesso do Google Sheets' });
+      if (!rowToDelete) return res.status(404).json({ error: 'Contrato não encontrado na planilha' });
+
+      await rowToDelete.delete();
+      res.json({ message: 'Contrato deletado com sucesso do Google Sheets' });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro DELETE Contratos:', error);
     res.status(500).json({ error: error.message });

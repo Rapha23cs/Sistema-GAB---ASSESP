@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDoc } from '../googleSheets.js';
+import { getSheetMutex } from '../utils/mutex.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,31 +15,37 @@ router.post('/register', async (req, res) => {
     const { nome, email, senha } = req.body;
     if (!nome || !email || !senha) return res.status(400).json({ error: 'Preencha todos os campos.' });
 
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Usuários'];
-    if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
+    const mutex = getSheetMutex('Usuários');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Usuários'];
+      if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
 
-    await sheet.loadHeaderRow();
-    const rows = await sheet.getRows();
+      await sheet.loadHeaderRow();
+      const rows = await sheet.getRows();
 
-    if (rows.some(r => r.get('Email') === email)) {
-      return res.status(400).json({ error: 'Este email já está em uso.' });
+      if (rows.some(r => r.get('Email') === email)) {
+        return res.status(400).json({ error: 'Este email já está em uso.' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(senha, salt);
+
+      await sheet.addRow({
+        'ID': Date.now().toString(),
+        'Nome': nome,
+        'Email': email,
+        'Senha': hashedPassword,
+        'Status': 'Pendente',
+        'Role': 'Usuario',
+        'DataCadastro': new Date().toISOString()
+      });
+
+      res.json({ message: 'Cadastro realizado com sucesso. Aguardando aprovação do administrador.' });
+    } finally {
+      release();
     }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(senha, salt);
-
-    await sheet.addRow({
-      'ID': Date.now().toString(),
-      'Nome': nome,
-      'Email': email,
-      'Senha': hashedPassword,
-      'Status': 'Pendente',
-      'Role': 'Usuario',
-      'DataCadastro': new Date().toISOString()
-    });
-
-    res.json({ message: 'Cadastro realizado com sucesso. Aguardando aprovação do administrador.' });
   } catch (error) {
     console.error('Erro no registro:', error);
     res.status(500).json({ error: 'Erro interno no servidor.' });
@@ -85,12 +92,15 @@ router.put('/profile', async (req, res) => {
     const { nome, email } = req.body;
     if (!nome || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios.' });
 
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Usuários'];
-    if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
+    const mutex = getSheetMutex('Usuários');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Usuários'];
+      if (!sheet) return res.status(500).json({ error: 'Aba de usuários não encontrada.' });
 
-    await sheet.loadHeaderRow();
-    const rows = await sheet.getRows();
+      await sheet.loadHeaderRow();
+      const rows = await sheet.getRows();
 
     if (rows.some(r => r.get('Email') === email && r.get('ID') !== req.user.id)) {
       return res.status(400).json({ error: 'Este email já está em uso por outra conta.' });
@@ -109,7 +119,10 @@ router.put('/profile', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, user: { nome: userRow.get('Nome'), email: userRow.get('Email'), role: userRow.get('Role') } });
+      res.json({ token, user: { nome: userRow.get('Nome'), email: userRow.get('Email'), role: userRow.get('Role') } });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro ao atualizar perfil:', error);
     res.status(500).json({ error: 'Erro interno no servidor.' });
@@ -143,10 +156,13 @@ router.put('/users/:id/approve', async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Acesso negado.' });
 
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Usuários'];
-    await sheet.loadHeaderRow();
-    const rows = await sheet.getRows();
+    const mutex = getSheetMutex('Usuários');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Usuários'];
+      await sheet.loadHeaderRow();
+      const rows = await sheet.getRows();
 
     const userRow = rows.find(r => r.get('ID') === req.params.id);
     if (!userRow) return res.status(404).json({ error: 'Usuário não encontrado.' });
@@ -154,7 +170,10 @@ router.put('/users/:id/approve', async (req, res) => {
     userRow.set('Status', 'Aprovado');
     await userRow.save();
 
-    res.json({ message: 'Usuário aprovado com sucesso.' });
+      res.json({ message: 'Usuário aprovado com sucesso.' });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro ao aprovar usuário:', error);
     res.status(500).json({ error: 'Erro interno no servidor.' });
@@ -165,17 +184,23 @@ router.delete('/users/:id', async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Acesso negado.' });
 
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Usuários'];
-    await sheet.loadHeaderRow();
-    const rows = await sheet.getRows();
+    const mutex = getSheetMutex('Usuários');
+    const release = await mutex.acquire();
+    try {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Usuários'];
+      await sheet.loadHeaderRow();
+      const rows = await sheet.getRows();
 
     const userRow = rows.find(r => r.get('ID') === req.params.id);
     if (!userRow) return res.status(404).json({ error: 'Usuário não encontrado.' });
 
     await userRow.delete();
 
-    res.json({ message: 'Usuário excluído com sucesso.' });
+      res.json({ message: 'Usuário excluído com sucesso.' });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro ao deletar usuário:', error);
     res.status(500).json({ error: 'Erro interno no servidor.' });

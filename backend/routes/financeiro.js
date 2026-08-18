@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDoc } from '../googleSheets.js';
+import { getSheetMutex } from '../utils/mutex.js';
 
 const router = express.Router();
 
@@ -66,6 +67,10 @@ router.post('/', async (req, res) => {
     const sheet = await getSheetByContrato(data.contrato);
     if (!sheet) return res.status(404).json({ error: 'Aba não encontrada para este contrato.' });
 
+    const mutex = getSheetMutex(sheet.title);
+    const release = await mutex.acquire();
+    try {
+
     const newRow = await sheet.addRow({
       'OBJETO': data.objeto, 'SEI': data.sei, 'MÊS': data.mes,
       'NOTA FISCAL': data.nota_fiscal, 'VALOR NF': data.valor_nf,
@@ -73,8 +78,11 @@ router.post('/', async (req, res) => {
       'ORDEM BANCÁRIA': data.ordem_bancaria, 'VALOR OB': data.valor_ob,
       'DATA DO PAGAMENTO': data.data_pagamento, 'STATUS OB': data.status_ob
     });
-    const sheetId = data.contrato === 'CT 02/2024' ? 's1' : (data.contrato === 'CT 88/2025 (MANUT)' ? 's2' : 's3');
-    res.status(201).json({ id: `${sheetId}_${newRow.rowNumber}`, ...data });
+      const sheetId = data.contrato === 'CT 02/2024' ? 's1' : (data.contrato === 'CT 88/2025 (MANUT)' ? 's2' : 's3');
+      res.status(201).json({ id: `${sheetId}_${newRow.rowNumber}`, ...data });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro POST Financeiro:', error);
     res.status(500).json({ error: error.message });
@@ -89,6 +97,10 @@ router.put('/:id', async (req, res) => {
   try {
     const sheet = await getSheetByContrato(data.contrato);
     if (!sheet) return res.status(404).json({ error: 'Aba não encontrada para este contrato.' });
+
+    const mutex = getSheetMutex(sheet.title);
+    const release = await mutex.acquire();
+    try {
 
     const rows = await sheet.getRows();
     const row = rows.find(r => r.rowNumber === rowNumber);
@@ -108,6 +120,9 @@ router.put('/:id', async (req, res) => {
 
     await row.save();
     res.json({ id, ...data });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro PUT Financeiro:', error);
     res.status(500).json({ error: error.message });
@@ -123,12 +138,19 @@ router.delete('/:id', async (req, res) => {
     const sheet = await getSheetByContrato(contrato);
     if (!sheet) return res.status(404).json({ error: 'Aba não encontrada para este contrato.' });
 
+    const mutex = getSheetMutex(sheet.title);
+    const release = await mutex.acquire();
+    try {
+
     const rows = await sheet.getRows();
     const row = rows.find(r => r.rowNumber === rowNumber);
     if (!row) return res.status(404).json({ error: 'Registro não encontrado' });
 
     await row.delete();
     res.json({ success: true });
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error('Erro DELETE Financeiro:', error);
     res.status(500).json({ error: error.message });
