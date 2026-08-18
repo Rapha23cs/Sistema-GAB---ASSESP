@@ -1,8 +1,8 @@
-import { apiFetch } from '../config';
-import { API_URL } from '../config';
+import { apiFetch, API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import toast from 'react-hot-toast';
+import { daysUntil } from '../utils/dateUtils';
 
 export const ContratosView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
@@ -169,12 +169,8 @@ export const ContratosView = () => {
     const dates = (c.vigencia || '').match(/\d{2}\/\d{2}\/\d{4}/g);
     if (dates && dates.length > 0) {
       const lastDateStr = dates[dates.length - 1];
-      const [d, m, y] = lastDateStr.split('/');
-      const endDate = new Date(y, m - 1, d);
-      const now = new Date();
-      const diffTime = endDate - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays >= 0 && diffDays <= 90;
+      const diffDays = daysUntil(lastDateStr);
+      return diffDays !== null && diffDays >= 0 && diffDays <= 90;
     }
     return false;
   }).length;

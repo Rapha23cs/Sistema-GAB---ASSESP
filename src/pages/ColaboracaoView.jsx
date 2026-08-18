@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import toast from 'react-hot-toast';
 import { API_URL, apiFetch } from '../config';
+import { formatDateBr } from '../utils/dateUtils';
 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -99,7 +100,7 @@ export const ColaboracaoView = () => {
     }
     
     const now = new Date();
-    const dateStr = now.toLocaleDateString('pt-BR');
+    const dateStr = formatDateBr(now);
     
     const taskObj = {
       id: `TSK-${Math.floor(1000 + Math.random() * 9000)}`,

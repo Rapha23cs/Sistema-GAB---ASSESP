@@ -2,23 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { apiFetch, API_URL } from '../config';
 
-const parseDateOutside = (dStr) => {
-  if (!dStr) return 0;
-  let str = dStr.trim().split(' ')[0];
-  if (str.includes('-')) {
-    const parts = str.split('-');
-    if (parts.length === 3) {
-      return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
-    }
-  }
-  if (str.includes('/')) {
-    const parts = str.split('/');
-    if (parts.length === 3) {
-      return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
-    }
-  }
-  return 0;
-};
+import { getTimestamp, daysUntil } from '../utils/dateUtils';
 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -66,12 +50,9 @@ export const NotificationBell = ({ setActiveTab }) => {
         }
         
         if (Array.isArray(conts)) {
-          const hoje = new Date();
           const vencendo = conts.filter(c => {
-            const ts = parseDateOutside(c.vigencia);
-            if (!ts) return false;
-            const diffDays = Math.ceil((ts - hoje.getTime()) / (1000 * 60 * 60 * 24));
-            return diffDays >= 0 && diffDays <= 90;
+            const diffDays = daysUntil(c.vigencia);
+            return diffDays !== null && diffDays >= 0 && diffDays <= 90;
           });
           if (vencendo.length > 0) {
             newAlerts.push({ 

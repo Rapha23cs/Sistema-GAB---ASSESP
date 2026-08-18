@@ -5,6 +5,7 @@ import { Icons } from '../components/Icons';
 import { ContractBadge, EqStatusBadge } from '../components/Badges';
 import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
 import toast from 'react-hot-toast';
+import { formatDateTimeBr } from '../utils/dateUtils';
 
 export const EquipmentsView = () => {
   const [filterTypes, setFilterTypes] = useState([]);
@@ -145,7 +146,7 @@ export const EquipmentsView = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return toast.error('Por favor, permita pop-ups para gerar o PDF.');
 
-    const dateStr = new Date().toLocaleString('pt-BR');
+    const dateStr = formatDateTimeBr(new Date());
     
     let html = `
       <!DOCTYPE html>

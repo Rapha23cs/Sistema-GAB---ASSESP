@@ -3,21 +3,9 @@ import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import toast from 'react-hot-toast';
+import { getTimestamp, daysUntil, formatDateTimeBr } from '../utils/dateUtils';
 
 const norm = str => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
-const parseDateOutside = (dStr) => {
-  if (!dStr) return 0;
-  let str = dStr.trim().split(' ')[0];
-  if (str.includes('-')) {
-    const parts = str.split('-');
-    if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
-  } else if (str.includes('/')) {
-    const parts = str.split('/');
-    if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
-  }
-  return 0;
-};
 
 const getStatusGrouped = (ossArray) => {
   const groupedMap = new Map();
@@ -28,8 +16,8 @@ const getStatusGrouped = (ossArray) => {
     }
     const group = groupedMap.get(key);
     
-    const tDate = parseDateOutside(os.data_tarefa);
-    const trDate = parseDateOutside(os.data_tratativa);
+    const tDate = getTimestamp(os.data_tarefa);
+    const trDate = getTimestamp(os.data_tratativa);
     const rowMax = Math.max(tDate, trDate);
     
     if (rowMax > group.maxDate) {
@@ -116,13 +104,7 @@ export const DashboardView = ({ setActiveTab }) => {
     const dates = (c.vigencia || '').match(/\d{2}\/\d{2}\/\d{4}/g);
     if (dates && dates.length > 0) {
       const lastDateStr = dates[dates.length - 1];
-      const [d, m, y] = lastDateStr.split('/');
-      const endDate = new Date(y, m - 1, d);
-      const now = new Date();
-      const diffTime = endDate - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      // Salvando os dias que faltam no objeto para exibir no modal
-      c.diasRestantes = diffDays;
+      const diffDays = daysUntil(lastDateStr);
       return diffDays >= 0 && diffDays <= 90;
     }
     return false;
@@ -188,15 +170,15 @@ export const DashboardView = ({ setActiveTab }) => {
   const atividadesRecentes = [];
 
   [...groupedOS]
-    .sort((a, b) => parseDateBr(b.data_tarefa) - parseDateBr(a.data_tarefa))
+    .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 4)
     .forEach(o => {
       atividadesRecentes.push({
         title: `OS ${o.ordem_servico || 'Nova'} ${o.statusGlobal === 'concluido' ? 'Concluída' : 'Atualizada'}`,
         desc: `A ordem de serviço teve movimentação.`,
         time: o.data_tarefa ? formatDateDisplay(o.data_tarefa) : 'Recente',
-        timestamp: parseDateBr(o.data_tarefa) || Date.now(),
-        Icon: o.statusGlobal === 'concluido' ? Icons.CheckCircle : Icons.Wrench,
+        timestamp: getTimestamp(o.data_tarefa) || Date.now(),
+        Icon: Icons.CheckCircle,
         color: o.statusGlobal === 'concluido' ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400',
         bg: o.statusGlobal === 'concluido' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50',
         tab: 'Ordens',
@@ -211,7 +193,7 @@ export const DashboardView = ({ setActiveTab }) => {
         title: `Licitação ${l.modalidade || 'Registrada'}`,
         desc: `Processo: ${l.processo_original || l.stargov || 'N/A'}`,
         time: l.data ? formatDateDisplay(l.data) : 'Recente',
-        timestamp: parseDateBr(l.data) || (Date.now() - i * 100000),
+        timestamp: getTimestamp(l.data) || (Date.now() - i * 100000),
         Icon: Icons.Landmark,
         color: 'text-purple-700 dark:text-purple-400',
         bg: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800/50',
@@ -288,7 +270,7 @@ export const DashboardView = ({ setActiveTab }) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return toast.error('Por favor, permita pop-ups para gerar o PDF.');
 
-    const dateStr = new Date().toLocaleString('pt-BR');
+    const dateStr = formatDateTimeBr(new Date());
     
     let html = `
       <!DOCTYPE html>
