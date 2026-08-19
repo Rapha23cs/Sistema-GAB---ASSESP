@@ -10,6 +10,7 @@ export const EquipmentModal = ({
   editingId,
   unidades,
   modelos,
+  series,
   coberturas
 }) => {
   if (!isOpen) return null;
@@ -39,19 +40,15 @@ export const EquipmentModal = ({
               </select>
             </div>
 
-            {/* Equipamento */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Equipamento</label>
-              <input name="equipamento" value={formData.equipamento} onChange={handleInputChange} type="text" placeholder="Ex: Esteira Raio-X" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
-            </div>
+
 
             {/* Unidade */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Unidade</label>
-              <input name="unidade" list="unidades-list" value={formData.unidade} onChange={handleInputChange} type="text" placeholder="Ex: Presídio Central" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
-              <datalist id="unidades-list">
-                {unidades.map((u, i) => <option key={i} value={u} />)}
-              </datalist>
+              <select name="unidade" value={formData.unidade} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                <option value="">Selecione a Unidade...</option>
+                {unidades.map((u, i) => <option key={i} value={u}>{u}</option>)}
+              </select>
             </div>
 
             {/* Localidade */}
@@ -63,25 +60,28 @@ export const EquipmentModal = ({
             {/* Modelo */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Modelo</label>
-              <input name="modelo" list="modelos-list" value={formData.modelo} onChange={handleInputChange} type="text" placeholder="Ex: Rapiscan 620XR" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
-              <datalist id="modelos-list">
-                {modelos.map((m, i) => <option key={i} value={m} />)}
-              </datalist>
+              <select name="modelo" value={formData.modelo} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                <option value="">Selecione o Modelo...</option>
+                {modelos.map((m, i) => <option key={i} value={m}>{m}</option>)}
+              </select>
             </div>
 
             {/* Número de Série */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Número de Série</label>
-              <input name="numero_serie" value={formData.numero_serie} onChange={handleInputChange} type="text" placeholder="Ex: SN-XR-88902" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+              <select name="numero_serie" value={formData.numero_serie} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                <option value="">Selecione o Número de Série...</option>
+                {series?.map((s, i) => <option key={i} value={s}>{s}</option>)}
+              </select>
             </div>
 
             {/* Cobertura de Contrato */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Cobertura de Contrato</label>
-              <input name="cobertura_contrato" list="coberturas-list" value={formData.cobertura_contrato} onChange={handleInputChange} type="text" placeholder="Ex: Empresa X / Com Contrato" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
-              <datalist id="coberturas-list">
-                {coberturas.map((c, i) => <option key={i} value={c} />)}
-              </datalist>
+              <select name="cobertura_contrato" value={formData.cobertura_contrato} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
+                <option value="">Selecione a Cobertura...</option>
+                {coberturas.map((c, i) => <option key={i} value={c}>{c}</option>)}
+              </select>
             </div>
 
             {/* Data de Garantia */}
@@ -101,9 +101,9 @@ export const EquipmentModal = ({
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status Operacional</label>
               <select name="status" value={formData.status} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 cursor-pointer">
                 <option value="">Selecione...</option>
-                <option value="Operante">Operante</option>
-                <option value="Funcionando com Pendência">Funcionando com Pendência</option>
-                <option value="Inoperante">Inoperante</option>
+                <option value="OPERANTE">OPERANTE</option>
+                <option value="OPERANTE COM PENDÊNCIA">OPERANTE COM PENDÊNCIA</option>
+                <option value="INOPERANTE">INOPERANTE</option>
               </select>
             </div>
             

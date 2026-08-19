@@ -18,7 +18,7 @@ export const ContratosView = () => {
   const initialFormState = {
     numero_contrato: '', vigencia: '', processo: '', tipo: '', recurso_financeiro: '',
     valor_global: '', valor_mensal: '', objeto: '', quantidade: '', execucao: '',
-    pendencia: '', prazo_entrega: '', status_licitacao: '', localizacao: '', consulta: '', responsavel: ''
+    pendencia: '', prazo_entrega: '', status_licitacao: '', localizacao: '', consulta: '', portaria: ''
   };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
@@ -79,6 +79,16 @@ export const ContratosView = () => {
         value = `${v.slice(0, 2)}/${v.slice(2)}`;
       } else {
         value = v;
+      }
+    }
+    
+    if (name === 'valor_global' || name === 'valor_mensal') {
+      let v = value.replace(/\D/g, '');
+      if (v === '') {
+        value = '';
+      } else {
+        v = (parseInt(v, 10) / 100).toFixed(2);
+        value = 'R$ ' + v.replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       }
     }
     
@@ -399,12 +409,12 @@ export const ContratosView = () => {
                                     <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Clock /> {contract.prazo_entrega || '-'}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Responsável</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Portaria</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                      <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
-                                        {contract.responsavel ? contract.responsavel.charAt(0) : '-'}
+                                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                        {contract.portaria ? contract.portaria.charAt(0) : '-'}
                                       </div>
-                                      <p className="text-sm text-slate-800 dark:text-slate-200">{contract.responsavel || '-'}</p>
+                                      <p className="text-sm text-slate-800 dark:text-slate-200">{contract.portaria || '-'}</p>
                                     </div>
                                   </div>
                                 </div>

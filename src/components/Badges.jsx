@@ -90,7 +90,7 @@ export const EqStatusBadge = ({ status }) => {
     styles = 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50';
     Icon = Icons.AlertCircle;
   } else if (val === 'OPERANTE' || val.includes('FUNCIONANDO')) {
-    displayStatus = 'FUNCIONANDO';
+    displayStatus = 'OPERANTE';
   }
 
   return (

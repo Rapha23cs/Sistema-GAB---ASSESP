@@ -80,7 +80,19 @@ export const EquipmentsView = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewEqData(prev => ({ ...prev, [name]: value }));
+    setNewEqData(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'categoria') {
+        updated.equipamento = value;
+        updated.unidade = '';
+        updated.modelo = '';
+        updated.numero_serie = '';
+      }
+      if (name === 'unidade') {
+        updated.numero_serie = '';
+      }
+      return updated;
+    });
   };
 
   const openNewModal = () => {
@@ -248,7 +260,7 @@ export const EquipmentsView = () => {
     if (filterStatuses.length > 0) {
       matchStatus = filterStatuses.some(fs => {
         if (fs === 'Operante') return statusVal.includes('funcionando') || statusVal === 'operante';
-        if (fs === 'Funcionando com Pendência') return statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
+        if (fs === 'Operante com Pendência') return statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
         if (fs === 'Inoperante') return statusVal.includes('inoperante') || statusVal.includes('condenado');
         return false;
       });
@@ -271,6 +283,11 @@ export const EquipmentsView = () => {
   const modelos = [...new Set(equipamentos.map(eq => eq.modelo).filter(Boolean))].sort();
   const unidades = [...new Set(equipamentos.map(eq => eq.unidade).filter(Boolean))].sort();
   const coberturas = [...new Set(equipamentos.map(eq => eq.cobertura_contrato).filter(Boolean))].sort();
+
+  // Dynamically filtered lists for the modal
+  const filteredUnidades = [...new Set(equipamentos.filter(e => e.categoria === newEqData.categoria).map(e => e.unidade).filter(Boolean))].sort();
+  const filteredModelos = [...new Set(equipamentos.filter(e => e.categoria === newEqData.categoria).map(e => e.modelo).filter(Boolean))].sort();
+  const filteredSeries = [...new Set(equipamentos.filter(e => e.categoria === newEqData.categoria && e.unidade === newEqData.unidade).map(e => e.numero_serie).filter(Boolean))].sort();
 
   // KPIs
   const totalEquipments = filteredEquipments.length;
@@ -321,7 +338,7 @@ export const EquipmentsView = () => {
         {[
           { label: 'Total de Equipamentos', value: totalEquipments, color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
           { label: 'Operantes', value: operantes, color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Funcionando com Pendência', value: funcionandoComPendencia, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: 'Operante com Pendência', value: funcionandoComPendencia, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
           { label: 'Inoperantes', value: inoperantes, color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
         ].map((stat, i) => (
           <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-default group`}>
@@ -477,7 +494,7 @@ export const EquipmentsView = () => {
               
               {isStatusesOpen && (
                 <div className="absolute top-full mt-1 left-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
-                  {['Operante', 'Funcionando com Pendência', 'Inoperante'].map((opt, i) => (
+                  {['Operante', 'Operante com Pendência', 'Inoperante'].map((opt, i) => (
                     <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
                       <input 
                         type="checkbox"
@@ -683,8 +700,9 @@ export const EquipmentsView = () => {
         formData={newEqData}
         handleInputChange={handleInputChange}
         editingId={editingId}
-        unidades={unidades}
-        modelos={modelos}
+        unidades={filteredUnidades}
+        modelos={filteredModelos}
+        series={filteredSeries}
         coberturas={coberturas}
       />
     </div>

@@ -699,7 +699,7 @@ export const DashboardView = ({ setActiveTab }) => {
                       className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${equipFilter === 'funcionando' ? 'bg-emerald-600 border-emerald-600 text-white shadow-md transform scale-[1.02]' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'}`}
                     >
                       <p className="text-2xl font-bold">{eqFuncionando.length}</p>
-                      <p className="text-[10px] uppercase font-bold tracking-wide mt-1">Funcionando</p>
+                      <p className="text-[10px] uppercase font-bold tracking-wide mt-1">Operante</p>
                     </button>
                     <button 
                       onClick={() => setEquipFilter(equipFilter === 'inoperantes' ? 'todos' : 'inoperantes')}
@@ -736,7 +736,7 @@ export const DashboardView = ({ setActiveTab }) => {
                               {e.equipamento || 'Equipamento'} {e.modelo ? `- ${e.modelo}` : ''}
                             </p>
                             <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border ${eqInoperantes.includes(e) ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-400' : eqComPendencia.includes(e) ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-400' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400'}`}>
-                              {eqInoperantes.includes(e) ? 'Inoperante' : eqComPendencia.includes(e) ? 'Com Pendência' : 'Funcionando'}
+                              {eqInoperantes.includes(e) ? 'Inoperante' : eqComPendencia.includes(e) ? 'Com Pendência' : 'Operante'}
                             </span>
                           </div>
                           <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">

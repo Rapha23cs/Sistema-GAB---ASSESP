@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
           status_licitacao: row.get('STATUS do Proc. Licitatório'),
           localizacao: row.get('LOCALIZAÇÃO'),
           consulta: row.get('CONSULTA'),
-          responsavel: row.get('RESPONSÁVEL'),
+          portaria: row.get('PORTARIA'),
           status: row.get('STATUS')
         }));
 
@@ -77,7 +77,7 @@ router.post('/', async (req, res) => {
       'STATUS do Proc. Licitatório': data.status_licitacao || '',
       'LOCALIZAÇÃO': data.localizacao || '',
       'CONSULTA': data.consulta || '',
-      'RESPONSÁVEL': data.responsavel || '',
+      'PORTARIA': data.portaria || '',
       'STATUS': data.status || ''
     });
 
@@ -128,7 +128,7 @@ router.put('/:id', async (req, res) => {
     rowToUpdate.set('STATUS do Proc. Licitatório', data.status_licitacao || '');
     rowToUpdate.set('LOCALIZAÇÃO', data.localizacao || '');
     rowToUpdate.set('CONSULTA', data.consulta || '');
-    rowToUpdate.set('RESPONSÁVEL', data.responsavel || '');
+    rowToUpdate.set('PORTARIA', data.portaria || '');
     rowToUpdate.set('STATUS', data.status || '');
 
     await rowToUpdate.save();
