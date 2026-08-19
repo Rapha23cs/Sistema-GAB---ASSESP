@@ -17,17 +17,19 @@ export const NotificationBell = ({ setActiveTab }) => {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        const [eqRes, contRes, tarRes, finRes] = await Promise.all([
+        const [eqRes, contRes, tarRes, finRes, licitRes] = await Promise.all([
           apiFetch(`${API_URL}/api/equipamentos`),
           apiFetch(`${API_URL}/api/contratos`),
           apiFetch(`${API_URL}/api/tarefas?t=${Date.now()}`),
-          apiFetch(`${API_URL}/api/financeiro?t=${Date.now()}`)
+          apiFetch(`${API_URL}/api/financeiro?t=${Date.now()}`),
+          apiFetch(`${API_URL}/api/licitacoes?t=${Date.now()}`)
         ]);
         
         const eqs = await eqRes.json();
         const conts = await contRes.json();
         const tarefas = await tarRes.json();
         const financ = await finRes.json();
+        const licitacoes = await licitRes.json();
         
         const newAlerts = [];
         
@@ -77,7 +79,7 @@ export const NotificationBell = ({ setActiveTab }) => {
               icon: Icons.CheckSquare,
               color: 'text-purple-500',
               bg: 'bg-purple-50 dark:bg-purple-900/30',
-              tab: 'Colaboracao'
+              tab: 'Colaboração'
             });
           }
 
@@ -111,6 +113,25 @@ export const NotificationBell = ({ setActiveTab }) => {
               color: 'text-emerald-500',
               bg: 'bg-emerald-50 dark:bg-emerald-900/30',
               tab: 'Financeiro'
+            });
+          }
+        }
+
+        if (Array.isArray(licitacoes)) {
+          const licPendentes = licitacoes.filter(l => {
+            const st = (l.status || '').toLowerCase();
+            return st.includes('pendente') || st.includes('aguardando') || st.includes('atenção');
+          });
+          
+          if (licPendentes.length > 0) {
+            newAlerts.push({
+              id: 'licit',
+              title: 'Processos Licitatórios',
+              desc: `Há ${licPendentes.length} processo(s) licitatório(s) com status pendente ou aguardando.`,
+              icon: Icons.BookOpen,
+              color: 'text-indigo-500',
+              bg: 'bg-indigo-50 dark:bg-indigo-900/30',
+              tab: 'Licitações'
             });
           }
         }

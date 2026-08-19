@@ -23,6 +23,8 @@ export const GlobalSearch = ({ setActiveTab }) => {
           handleSearch('Contratos', 'searchContract');
         } else if (val.includes('nf') || val.includes('nota fiscal') || val.includes('ob') || val.includes('ordem bancária') || val.includes('financeiro') || val.includes('pagamento') || val.includes('fatura')) {
           handleSearch('Financeiro', 'searchFinanceiro');
+        } else if (val.includes('licita') || val.includes('processo') || val.includes('stargov') || val.includes('pregão') || val.includes('pregao') || val.includes('inexigibilidade')) {
+          handleSearch('Licitações', 'searchLic');
         } else {
           handleSearch('Equipamentos', 'searchEquip');
         }
@@ -92,6 +94,16 @@ export const GlobalSearch = ({ setActiveTab }) => {
                 <Icons.Landmark className="w-4 h-4" /> 
               </div>
               Controle Financeiro
+            </button>
+
+            <button 
+              onClick={() => handleSearch('Licitações', 'searchLic')} 
+              className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 flex items-center gap-3 transition-colors cursor-pointer"
+            >
+              <div className="p-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-md">
+                <Icons.BookOpen className="w-4 h-4" /> 
+              </div>
+              Processos Licitatórios
             </button>
           </div>
         </>

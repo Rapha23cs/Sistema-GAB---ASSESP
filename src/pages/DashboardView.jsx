@@ -521,7 +521,14 @@ export const DashboardView = ({ setActiveTab }) => {
               </div>
               <div className="space-y-3">
                 {pendingTasks.map(task => (
-                  <div key={task.id} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 transition-colors group cursor-pointer">
+                  <div 
+                    key={task.id} 
+                    onClick={() => {
+                      sessionStorage.setItem('searchTask', task.id);
+                      if (setActiveTab) setActiveTab('Colaboração');
+                    }}
+                    className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 transition-colors group cursor-pointer"
+                  >
                     <p className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors leading-relaxed">{task.text}</p>
                     <div className="flex justify-between items-center mt-3">
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">De: {task.author}</span>

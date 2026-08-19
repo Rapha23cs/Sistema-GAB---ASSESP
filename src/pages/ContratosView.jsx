@@ -335,9 +335,9 @@ export const ContratosView = () => {
                         <tr className="bg-slate-50/50 dark:bg-slate-900/30 transition-colors duration-500">
                           <td colSpan="6" className="p-0 border-b border-slate-200 dark:border-slate-800">
                             <div className="pl-12 pr-8 py-8">
-                              <div className="grid grid-cols-4 gap-x-8 gap-y-6">
+                              <div className="flex flex-wrap items-stretch justify-between gap-6 bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
                                 {/* Column 1 */}
-                                <div className="space-y-4">
+                                <div className="flex flex-col gap-4 flex-1">
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Recurso Financeiro</p>
                                     <p className="text-sm text-slate-800 dark:text-slate-200">{contract.recurso_financeiro || '-'}</p>
@@ -352,8 +352,10 @@ export const ContratosView = () => {
                                   </div>
                                 </div>
 
+                                <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+
                                 {/* Column 2 */}
-                                <div className="space-y-4">
+                                <div className="flex flex-col gap-4 flex-1">
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Valor Global</p>
                                     <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{contract.valor_global || '-'}</p>
@@ -368,8 +370,10 @@ export const ContratosView = () => {
                                   </div>
                                 </div>
 
+                                <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+
                                 {/* Column 3 */}
-                                <div className="space-y-4">
+                                <div className="flex flex-col gap-4 flex-1">
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Execução</p>
                                     <p className="text-sm text-slate-800 dark:text-slate-200 uppercase">{contract.execucao || '-'}</p>
@@ -386,8 +390,10 @@ export const ContratosView = () => {
                                   </div>
                                 </div>
 
+                                <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+
                                 {/* Column 4 */}
-                                <div className="space-y-4">
+                                <div className="flex flex-col gap-4 flex-1">
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Prazo de Entrega (Prev)</p>
                                     <p className="text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Clock /> {contract.prazo_entrega || '-'}</p>

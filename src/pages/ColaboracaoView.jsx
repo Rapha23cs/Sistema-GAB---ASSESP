@@ -14,6 +14,7 @@ export const ColaboracaoView = () => {
   const [selectedAssignee, setSelectedAssignee] = useState('');
   const [priority, setPriority] = useState('baixa');
   const [isLoading, setIsLoading] = useState(true);
+  const [highlightedTaskId, setHighlightedTaskId] = useState(null);
 
   // Busca usuários para popular o painel lateral e o dropdown de atribuição
   const fetchUsers = async () => {
@@ -48,6 +49,23 @@ export const ColaboracaoView = () => {
     fetchUsers();
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading && tasks.length > 0) {
+      const searchTask = sessionStorage.getItem('searchTask');
+      if (searchTask) {
+        setHighlightedTaskId(searchTask);
+        sessionStorage.removeItem('searchTask');
+        setTimeout(() => {
+          const el = document.getElementById(`task-${searchTask}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => setHighlightedTaskId(null), 3000); // Remove highlight after 3 seconds
+          }
+        }, 100);
+      }
+    }
+  }, [isLoading, tasks]);
 
   const toggleTask = async (task) => {
     try {
@@ -196,8 +214,20 @@ export const ColaboracaoView = () => {
           ) : tasks.length === 0 ? (
             <p className="text-center text-slate-500 my-8">Nenhuma tarefa encontrada.</p>
           ) : (
-            tasks.map((task) => (
-              <div key={task.id} className={`p-5 rounded-2xl border transition-all duration-300 ${task.completed ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 opacity-60' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 shadow-sm'}`}>
+            tasks.map((task) => {
+              const isHighlighted = highlightedTaskId === task.id;
+              return (
+              <div 
+                key={task.id} 
+                id={`task-${task.id}`}
+                className={`p-5 rounded-2xl border transition-all duration-500 ${
+                  isHighlighted 
+                    ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-400 dark:border-blue-500 shadow-md ring-2 ring-blue-500/50 transform scale-[1.02] z-10 relative' 
+                    : task.completed 
+                      ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 opacity-60' 
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 shadow-sm'
+                }`}
+              >
                 <div className="flex gap-4 items-start">
                   {/* Avatar */}
                   <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0 font-bold text-sm text-slate-600 dark:text-slate-300">
@@ -273,7 +303,7 @@ export const ColaboracaoView = () => {
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
       </div>

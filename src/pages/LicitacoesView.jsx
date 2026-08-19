@@ -301,8 +301,8 @@ export const LicitacoesView = () => {
                     {expandedRow === item.id && (
                       <tr className="bg-slate-50/50 dark:bg-slate-800/20">
                         <td colSpan="7" className="px-14 py-6 border-b border-slate-100 dark:border-slate-800">
-                          <div className="grid grid-cols-3 gap-8">
-                            <div className="space-y-4">
+                          <div className="flex flex-wrap items-stretch justify-between gap-6 bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
+                            <div className="flex flex-col gap-4 flex-1 text-center md:text-left">
                               <div>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Processos de Autorização (Governo)</p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.processo_autorizacao || '-'}</p>
@@ -312,26 +312,30 @@ export const LicitacoesView = () => {
                                 <p className="text-sm text-slate-700 dark:text-slate-300">{item.memo || '-'}</p>
                               </div>
                             </div>
-                            <div className="space-y-4">
+                            
+                            <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            
+                            <div className="flex flex-col gap-4 flex-1 text-center md:text-left">
                               <div>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Custeio/Recurso</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.custeio || '-'}</p>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.custeio || '-'}</p>
                               </div>
                               <div>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Quantidade</p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300">{item.quantidade || '-'}</p>
                               </div>
                             </div>
-                            <div className="space-y-4">
+                            
+                            <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            
+                            <div className="flex flex-col gap-4 flex-1 text-center md:text-left">
                               <div>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Localização</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.localizacao || '-'}</p>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.localizacao || '-'}</p>
                               </div>
-                              <div className="flex flex-col justify-center h-full">
-                                <div>
-                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data</p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">{item.data || '-'}</p>
-                                </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data</p>
+                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.data || '-'}</p>
                               </div>
                             </div>
                           </div>

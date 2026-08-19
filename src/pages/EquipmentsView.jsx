@@ -607,31 +607,37 @@ export const EquipmentsView = () => {
                         <tr className="bg-slate-50/50 dark:bg-slate-900/30 transition-colors duration-500">
                           <td colSpan="7" className="p-0 border-b border-slate-200 dark:border-slate-800">
                             <div className="px-16 py-8">
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                              <div className="flex flex-wrap items-stretch justify-between gap-6 bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
                                 {/* Contrato */}
-                                <div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2 flex items-center gap-2">
+                                <div className="flex flex-col flex-1 text-center md:text-left gap-1">
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-center md:justify-start gap-2">
                                     <Icons.FileSignature className="w-4 h-4" /> Contrato
                                   </p>
-                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                                     {eq.contrato || '-'}
                                   </p>
                                 </div>
+                                
+                                <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+
                                 {/* Data de Garantia */}
-                                <div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2 flex items-center gap-2">
+                                <div className="flex flex-col flex-1 text-center md:text-left gap-1">
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-center md:justify-start gap-2">
                                     <Icons.Calendar className="w-4 h-4" /> Data de Garantia {renderGarantiaIcon(eq.data_garantia)}
                                   </p>
-                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                                     {eq.data_garantia || 'Não se aplica'}
                                   </p>
                                 </div>
+
+                                <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+
                                 {/* Informações/Pendências */}
-                                <div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2 flex items-center gap-2">
+                                <div className="flex flex-col flex-1 text-center md:text-left gap-1">
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-center md:justify-start gap-2">
                                     <Icons.AlertCircle className="w-4 h-4" /> Informações / Pendências
                                   </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                                  <p className="text-sm text-slate-700 dark:text-slate-300">
                                     {eq.informacoes_pendencias || '-'}
                                   </p>
                                 </div>
