@@ -1,43 +1,47 @@
 import express from 'express';
 import { getDoc } from '../googleSheets.js';
 import { getSheetMutex } from '../utils/mutex.js';
+import { withCache, invalidateCache } from '../utils/cache.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Contratos - PPMA'];
-    if (!sheet) return res.status(404).json({ error: 'Aba "Contratos - PPMA" não encontrada na planilha.' });
+    const data = await withCache('contratos', async () => {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Contratos - PPMA'];
+      if (!sheet) throw new Error('Aba "Contratos - PPMA" não encontrada na planilha.');
 
-    await sheet.loadHeaderRow(5);
+      await sheet.loadHeaderRow(5);
 
-    const rows = await sheet.getRows();
-    const contratos = rows
-      .filter(row => row.get('CONTRATO') || row.get('OBJETO') || row.get('RESPONSÁVEL')) // Ignora linhas vazias
-      .map((row) => ({
-        id: row.rowNumber, // Usamos o número da linha como ID único para editar/deletar
-        numero_contrato: row.get('CONTRATO'),
-        vigencia: row.get('VIGÊNCIA'),
-        processo: row.get('PROCESSO "mãe" (SEI ou físico)'),
-        tipo: row.get('TIPO (OS/OF)'),
-        recurso_financeiro: row.get('RECURSO FINANCEIRO'),
-        valor_global: row.get('VALOR GLOBAL (atualizado)'),
-        valor_mensal: row.get('VALOR MENSAL'),
-        objeto: row.get('OBJETO'),
-        quantidade: row.get('QUANTIDADE'),
-        execucao: row.get('EXECUÇÃO'),
-        pendencia: row.get('PENDÊNCIA (saldo)'),
-        prazo_entrega: row.get('PRAZO DE ENTREGA (previsão)'),
-        status_licitacao: row.get('STATUS do Proc. Licitatório'),
-        localizacao: row.get('LOCALIZAÇÃO'),
-        consulta: row.get('CONSULTA'),
-        responsavel: row.get('RESPONSÁVEL'),
-        status: row.get('STATUS')
-      }));
+      const rows = await sheet.getRows();
+      const contratos = rows
+        .filter(row => row.get('CONTRATO') || row.get('OBJETO') || row.get('RESPONSÁVEL')) // Ignora linhas vazias
+        .map((row) => ({
+          id: row.rowNumber, // Usamos o número da linha como ID único para editar/deletar
+          numero_contrato: row.get('CONTRATO'),
+          vigencia: row.get('VIGÊNCIA'),
+          processo: row.get('PROCESSO "mãe" (SEI ou físico)'),
+          tipo: row.get('TIPO (OS/OF)'),
+          recurso_financeiro: row.get('RECURSO FINANCEIRO'),
+          valor_global: row.get('VALOR GLOBAL (atualizado)'),
+          valor_mensal: row.get('VALOR MENSAL'),
+          objeto: row.get('OBJETO'),
+          quantidade: row.get('QUANTIDADE'),
+          execucao: row.get('EXECUÇÃO'),
+          pendencia: row.get('PENDÊNCIA (saldo)'),
+          prazo_entrega: row.get('PRAZO DE ENTREGA (previsão)'),
+          status_licitacao: row.get('STATUS do Proc. Licitatório'),
+          localizacao: row.get('LOCALIZAÇÃO'),
+          consulta: row.get('CONSULTA'),
+          responsavel: row.get('RESPONSÁVEL'),
+          status: row.get('STATUS')
+        }));
 
-    // Inverte a ordem para os mais recentes (últimas linhas da planilha) aparecerem primeiro
-    res.json(contratos.reverse());
+      // Inverte a ordem para os mais recentes (últimas linhas da planilha) aparecerem primeiro
+      return contratos.reverse();
+    });
+    res.json(data);
   } catch (error) {
     console.error('Erro GET Contratos:', error);
     res.status(500).json({ error: error.message });
@@ -79,6 +83,7 @@ router.post('/', async (req, res) => {
 
     const contrato = { ...data, id: newRow.rowNumber };
     res.status(201).json(contrato);
+    invalidateCache('contratos');
     } finally {
       release();
     }
@@ -129,6 +134,7 @@ router.put('/:id', async (req, res) => {
     await rowToUpdate.save();
 
     res.json({ ...data, id: rowToUpdate.rowNumber });
+    invalidateCache('contratos');
     } finally {
       release();
     }
@@ -162,6 +168,7 @@ router.delete('/:id', async (req, res) => {
 
       await rowToDelete.delete();
       res.json({ message: 'Contrato deletado com sucesso do Google Sheets' });
+      invalidateCache('contratos');
     } finally {
       release();
     }

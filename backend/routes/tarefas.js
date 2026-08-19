@@ -1,27 +1,31 @@
 import express from 'express';
 import { getDoc } from '../googleSheets.js';
 import { getSheetMutex } from '../utils/mutex.js';
+import { withCache, invalidateCache } from '../utils/cache.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Tarefas'];
-    if (!sheet) return res.status(404).json({ error: 'Aba Tarefas não encontrada' });
-    const rows = await sheet.getRows();
-    const tarefas = rows.map(r => ({
-      id: r.get('ID'),
-      rowNumber: r.rowNumber,
-      text: r.get('Descrição'),
-      author: r.get('Autor'),
-      assignee: r.get('Atribuído'),
-      date: r.get('DataCadastro'),
-      status: r.get('Status'),
-      completed: r.get('Status') === 'Concluída',
-      priority: r.get('Prioridade')
-    }));
-    res.json(tarefas.reverse());
+    const data = await withCache('tarefas', async () => {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Tarefas'];
+      if (!sheet) throw new Error('Aba Tarefas não encontrada');
+      const rows = await sheet.getRows();
+      const tarefas = rows.map(r => ({
+        id: r.get('ID'),
+        rowNumber: r.rowNumber,
+        text: r.get('Descrição'),
+        author: r.get('Autor'),
+        assignee: r.get('Atribuído'),
+        date: r.get('DataCadastro'),
+        status: r.get('Status'),
+        completed: r.get('Status') === 'Concluída',
+        priority: r.get('Prioridade')
+      }));
+      return tarefas.reverse();
+    });
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -45,6 +49,7 @@ router.post('/', async (req, res) => {
         'Prioridade': novaTarefa.priority
       });
       res.json({ message: 'Tarefa adicionada' });
+      invalidateCache('tarefas');
     } finally {
       release();
     }
@@ -66,7 +71,8 @@ router.put('/:rowNumber', async (req, res) => {
 
       row.set('Status', req.body.completed ? 'Concluída' : 'Pendente');
       await row.save();
-      res.json({ message: 'Status atualizado' });
+      res.json({ message: 'Tarefa atualizada' });
+      invalidateCache('tarefas');
     } finally {
       release();
     }
@@ -87,7 +93,8 @@ router.delete('/:rowNumber', async (req, res) => {
       if (!row) return res.status(404).json({ error: 'Tarefa não encontrada' });
 
       await row.delete();
-      res.json({ message: 'Tarefa excluída com sucesso' });
+      res.json({ message: 'Tarefa deletada' });
+      invalidateCache('tarefas');
     } finally {
       release();
     }

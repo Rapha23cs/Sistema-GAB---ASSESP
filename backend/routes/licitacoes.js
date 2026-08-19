@@ -1,38 +1,41 @@
 import express from 'express';
 import { getDoc } from '../googleSheets.js';
 import { getSheetMutex } from '../utils/mutex.js';
+import { withCache, invalidateCache } from '../utils/cache.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Procs. Licitatórios (sem Contrato)'];
-    if (!sheet) return res.status(404).json({ error: 'Aba "Procs. Licitatórios (sem Contrato)" não encontrada.' });
+    const licitacoes = await withCache('licitacoes', async () => {
+      const doc = await getDoc();
+      const sheet = doc.sheetsByTitle['Procs. Licitatórios (sem Contrato)'];
+      if (!sheet) throw new Error('Aba "Procs. Licitatórios (sem Contrato)" não encontrada.');
 
-    await sheet.loadHeaderRow(5);
-    const rows = await sheet.getRows();
+      await sheet.loadHeaderRow(5);
+      const rows = await sheet.getRows();
 
-    const licitacoes = rows
-      .filter(row => row.get('PROCESSO ORIGINAL (SEI)')) // ignora linhas vazias
-      .map(row => ({
-        id: row.rowNumber,
-        processo_original: row.get('PROCESSO ORIGINAL (SEI)'),
-        processo_autorizacao: row.get('PROCESSOS DE AUTORIZAÇÃO (GOVERNO)'),
-        stargov: row.get('STARGOV N°'),
-        memo: row.get('MEMO DE ABERTURA'),
-        modalidade: row.get('LICITAÇÃO (modalidade)'),
-        custeio: row.get('CUSTEIO/RECURSO'),
-        valor_previsto: row.get('VALOR CONTRATUAL PREVISTO'),
-        objeto: row.get('OBJETO'),
-        quantidade: row.get('QUANTIDADE'),
-        status: row.get('STATUS'),
-        localizacao: row.get('LOCALIZAÇÃO'),
-        data: row.get('DATA'),
-        tipo_objeto: row.get('TIPO DE OBJETO')
-      }));
+      return rows
+        .filter(row => row.get('PROCESSO ORIGINAL (SEI)'))
+        .map(row => ({
+          id: row.rowNumber,
+          processo_original: row.get('PROCESSO ORIGINAL (SEI)'),
+          processo_autorizacao: row.get('PROCESSOS DE AUTORIZAÇÃO (GOVERNO)'),
+          stargov: row.get('STARGOV N°'),
+          memo: row.get('MEMO DE ABERTURA'),
+          modalidade: row.get('LICITAÇÃO (modalidade)'),
+          custeio: row.get('CUSTEIO/RECURSO'),
+          valor_previsto: row.get('VALOR CONTRATUAL PREVISTO'),
+          objeto: row.get('OBJETO'),
+          quantidade: row.get('QUANTIDADE'),
+          status: row.get('STATUS'),
+          localizacao: row.get('LOCALIZAÇÃO'),
+          data: row.get('DATA'),
+          tipo_objeto: row.get('TIPO DE OBJETO')
+        })).reverse();
+    });
 
-    res.json(licitacoes.reverse());
+    res.json(licitacoes);
   } catch (error) {
     console.error('Erro GET Licitacoes:', error);
     res.status(500).json({ error: error.message });
@@ -68,6 +71,7 @@ router.post('/', async (req, res) => {
     });
 
       const licitacao = { ...data, id: newRow.rowNumber };
+      invalidateCache('licitacoes');
       res.status(201).json(licitacao);
     } finally {
       release();
@@ -111,6 +115,7 @@ router.put('/:id', async (req, res) => {
       rowToUpdate.set('TIPO DE OBJETO', data.tipo_objeto || '');
 
       await rowToUpdate.save();
+      invalidateCache('licitacoes');
 
       res.json({ ...data, id: rowToUpdate.rowNumber });
     } finally {
@@ -140,6 +145,7 @@ router.delete('/:id', async (req, res) => {
 
       await rowToDelete.delete();
       res.json({ message: 'Licitação deletada' });
+      invalidateCache('licitacoes');
     } finally {
       release();
     }

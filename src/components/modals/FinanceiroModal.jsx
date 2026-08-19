@@ -11,9 +11,17 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            // Extrai a lista de processos ou numeros dos contratos e remove duplicatas/vazios
-            const options = Array.from(new Set(data.map(c => c.numero_contrato || c.processo).filter(Boolean))).sort();
-            setContratosOptions(options);
+            const uniqueContracts = [];
+            const seen = new Set();
+            data.forEach(c => {
+              const name = c.numero_contrato || c.processo;
+              if (name && !seen.has(name)) {
+                seen.add(name);
+                uniqueContracts.push({ name, objeto: c.objeto });
+              }
+            });
+            uniqueContracts.sort((a, b) => a.name.localeCompare(b.name));
+            setContratosOptions(uniqueContracts);
           }
         })
         .catch(err => console.error('Erro ao buscar contratos para o modal:', err));
@@ -46,16 +54,22 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                   <select 
                     name="contrato" 
                     value={formData.contrato} 
-                    onChange={handleInputChange} 
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      const selected = contratosOptions.find(c => c.name === e.target.value);
+                      if (selected) {
+                        if (selected.objeto) handleInputChange({ target: { name: 'objeto', value: selected.objeto } });
+                      }
+                    }} 
                     required 
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   >
                     <option value="" disabled>Selecione um contrato...</option>
                     {contratosOptions.map(c => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c.name} value={c.name}>{c.name}</option>
                     ))}
                     {/* Caso o contrato já exista no formData mas não esteja na lista retornada pela API */}
-                    {formData.contrato && !contratosOptions.includes(formData.contrato) && (
+                    {formData.contrato && !contratosOptions.find(c => c.name === formData.contrato) && (
                       <option value={formData.contrato}>{formData.contrato}</option>
                     )}
                   </select>
@@ -102,7 +116,19 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status NF (RFC/RGC)</label>
-                  <input name="status_nf" value={formData.status_nf} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  <select 
+                    name="status_nf" 
+                    value={formData.status_nf} 
+                    onChange={handleInputChange} 
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="AUTORIZADO">AUTORIZADO</option>
+                    <option value="PENDENTE">PENDENTE</option>
+                    {formData.status_nf && !["AUTORIZADO", "PENDENTE"].includes(formData.status_nf) && (
+                      <option value={formData.status_nf}>{formData.status_nf}</option>
+                    )}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -123,7 +149,19 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status OB</label>
-                    <input name="status_ob" value={formData.status_ob} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    <select 
+                      name="status_ob" 
+                      value={formData.status_ob} 
+                      onChange={handleInputChange} 
+                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="PAGO">PAGO</option>
+                      <option value="PENDENTE">PENDENTE</option>
+                      {formData.status_ob && !["PAGO", "PENDENTE"].includes(formData.status_ob) && (
+                        <option value={formData.status_ob}>{formData.status_ob}</option>
+                      )}
+                    </select>
                   </div>
                 </div>
 
