@@ -100,15 +100,16 @@ export const DashboardView = ({ setActiveTab }) => {
     return !p.includes('finalizado') && !v.includes('finalizado');
   }).length;
 
-  const contratosVencendoList = contratos.filter(c => {
+  const contratosVencendoList = contratos.map(c => {
     const dates = (c.vigencia || '').match(/\d{2}\/\d{2}\/\d{4}/g);
     if (dates && dates.length > 0) {
       const lastDateStr = dates[dates.length - 1];
-      const diffDays = daysUntil(lastDateStr);
-      return diffDays >= 0 && diffDays <= 90;
+      c.diasRestantes = daysUntil(lastDateStr);
+    } else {
+      c.diasRestantes = -1;
     }
-    return false;
-  });
+    return c;
+  }).filter(c => c.diasRestantes >= 0 && c.diasRestantes <= 90);
   const contratosAVencer = contratosVencendoList.length;
 
   const eqAgAprovacao = equipamentos.filter(e => {
