@@ -1,7 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../Icons';
+import { apiFetch, API_URL } from '../../config';
 
 export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInputChange, editingId }) => {
+  const [contratosOptions, setContratosOptions] = useState([]);
+  
+  useEffect(() => {
+    if (isOpen) {
+      apiFetch(`${API_URL}/api/contratos?t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            const uniqueContracts = [];
+            const seen = new Set();
+            data.forEach(c => {
+              const name = c.numero_contrato || c.processo;
+              if (name && !seen.has(name)) {
+                seen.add(name);
+                uniqueContracts.push({ name, objeto: c.objeto });
+              }
+            });
+            uniqueContracts.sort((a, b) => a.name.localeCompare(b.name));
+            setContratosOptions(uniqueContracts);
+          }
+        })
+        .catch(err => console.error('Erro ao buscar contratos para o modal:', err));
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -25,20 +51,28 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contrato *</label>
-                  <input 
+                  <select 
                     name="contrato" 
-                    list="contratos-list" 
                     value={formData.contrato} 
-                    onChange={handleInputChange} 
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      const selected = contratosOptions.find(c => c.name === e.target.value);
+                      if (selected) {
+                        if (selected.objeto) handleInputChange({ target: { name: 'objeto', value: selected.objeto } });
+                      }
+                    }} 
                     required 
-                    placeholder="Selecione ou digite um contrato..." 
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" 
-                  />
-                  <datalist id="contratos-list">
-                    <option value="CT 02/2024" />
-                    <option value="CT 88/2025 (MANUT)" />
-                    <option value="CT 88/2025 (PEÇAS)" />
-                  </datalist>
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    <option value="" disabled>Selecione um contrato...</option>
+                    {contratosOptions.map(c => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                    {/* Caso o contrato já exista no formData mas não esteja na lista retornada pela API */}
+                    {formData.contrato && !contratosOptions.find(c => c.name === formData.contrato) && (
+                      <option value={formData.contrato}>{formData.contrato}</option>
+                    )}
+                  </select>
                 </div>
 
                 <div>
@@ -82,7 +116,19 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status NF (RFC/RGC)</label>
-                  <input name="status_nf" value={formData.status_nf} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                  <select 
+                    name="status_nf" 
+                    value={formData.status_nf} 
+                    onChange={handleInputChange} 
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="AUTORIZADO">AUTORIZADO</option>
+                    <option value="PENDENTE">PENDENTE</option>
+                    {formData.status_nf && !["AUTORIZADO", "PENDENTE"].includes(formData.status_nf) && (
+                      <option value={formData.status_nf}>{formData.status_nf}</option>
+                    )}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -103,7 +149,19 @@ export const FinanceiroModal = ({ isOpen, onClose, onSave, formData, handleInput
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status OB</label>
-                    <input name="status_ob" value={formData.status_ob} onChange={handleInputChange} type="text" className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    <select 
+                      name="status_ob" 
+                      value={formData.status_ob} 
+                      onChange={handleInputChange} 
+                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="PAGO">PAGO</option>
+                      <option value="PENDENTE">PENDENTE</option>
+                      {formData.status_ob && !["PAGO", "PENDENTE"].includes(formData.status_ob) && (
+                        <option value={formData.status_ob}>{formData.status_ob}</option>
+                      )}
+                    </select>
                   </div>
                 </div>
 

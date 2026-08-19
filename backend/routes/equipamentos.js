@@ -2,42 +2,46 @@ import express from 'express';
 import { getDoc } from '../googleSheets.js';
 import { EQUIP_SHEETS } from '../utils/sheetsConfig.js';
 import { getSheetMutex } from '../utils/mutex.js';
+import { withCache, invalidateCache } from '../utils/cache.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const doc = await getDoc();
-    let todosEquipamentos = [];
+    const data = await withCache('equipamentos', async () => {
+      const doc = await getDoc();
+      let todosEquipamentos = [];
 
-    for (const conf of EQUIP_SHEETS) {
-      const sheet = doc.sheetsByTitle[conf.title];
-      if (sheet) {
-        await sheet.loadHeaderRow(conf.headerRow);
-        const rows = await sheet.getRows();
-        const equipamentos = rows
-          .filter(row => row.get('EQUIPAMENTO') || row.get('N° DE SÉRIE'))
-          .map(row => ({
-            id: row.rowNumber,
-            categoria: conf.category,
-            sheetTitle: conf.title,
-            cobertura_contrato: row.get('COBERTURA DE CONTRATO'),
-            contrato: row.get('CONTRATO'),
-            data_garantia: row.get('DATA DA GARANTIA') || row.get('DATA DE GARANTIA'),
-            localidade: row.get('LOCALIDADE'),
-            equipamento: row.get('EQUIPAMENTO'),
-            unidade: row.get('UNIDADE'),
-            modelo: row.get('MODELO'),
-            numero_serie: row.get('N° DE SÉRIE'),
-            informacoes_pendencias: row.get('INFORMAÇÕES / PENDÊNCIAS') || row.get('PENDÊNCIA'),
-            status: row.get('STATUS'),
-            ordem_servico: row.get('ORDEM DE SERVIÇO / TAREFA') || row.get('ORDEM DE SERVIÇO (atual)')
-          }));
-        todosEquipamentos = [...todosEquipamentos, ...equipamentos];
+      for (const conf of EQUIP_SHEETS) {
+        const sheet = doc.sheetsByTitle[conf.title];
+        if (sheet) {
+          await sheet.loadHeaderRow(conf.headerRow);
+          const rows = await sheet.getRows();
+          const equipamentos = rows
+            .filter(row => row.get('EQUIPAMENTO') || row.get('N° DE SÉRIE'))
+            .map(row => ({
+              id: row.rowNumber,
+              categoria: conf.category,
+              sheetTitle: conf.title,
+              cobertura_contrato: row.get('COBERTURA DE CONTRATO'),
+              contrato: row.get('CONTRATO'),
+              data_garantia: row.get('DATA DA GARANTIA') || row.get('DATA DE GARANTIA'),
+              localidade: row.get('LOCALIDADE'),
+              equipamento: row.get('EQUIPAMENTO'),
+              unidade: row.get('UNIDADE'),
+              modelo: row.get('MODELO'),
+              numero_serie: row.get('N° DE SÉRIE'),
+              informacoes_pendencias: row.get('INFORMAÇÕES / PENDÊNCIAS') || row.get('PENDÊNCIA'),
+              status: row.get('STATUS'),
+              ordem_servico: row.get('ORDEM DE SERVIÇO / TAREFA') || row.get('ORDEM DE SERVIÇO (atual)')
+            }));
+          todosEquipamentos = [...todosEquipamentos, ...equipamentos];
+        }
       }
-    }
-    // Não vamos usar o reverse no array inteiro senão mistura as abas. Mas tudo bem, o react pode ordenar.
-    res.json(todosEquipamentos.reverse());
+      return todosEquipamentos.reverse();
+    });
+
+    res.json(data);
   } catch (error) {
     console.error('Erro GET Equipamentos:', error);
     res.status(500).json({ error: error.message });
@@ -74,6 +78,7 @@ router.post('/', async (req, res) => {
       });
 
       res.status(201).json({ ...data, id: newRow.rowNumber, sheetTitle: conf.title });
+      invalidateCache('equipamentos');
     } finally {
       release();
     }
@@ -120,6 +125,7 @@ router.put('/:id', async (req, res) => {
 
       await rowToUpdate.save();
       res.json({ ...data, id: rowToUpdate.rowNumber, sheetTitle: conf.title });
+      invalidateCache('equipamentos');
     } finally {
       release();
     }
@@ -152,6 +158,7 @@ router.delete('/:id', async (req, res) => {
 
       await rowToDelete.delete();
       res.json({ message: 'Equipamento deletado' });
+      invalidateCache('equipamentos');
     } finally {
       release();
     }

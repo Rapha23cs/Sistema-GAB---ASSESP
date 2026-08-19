@@ -2,49 +2,53 @@ import express from 'express';
 import { getDoc } from '../googleSheets.js';
 import { OS_SHEETS, updateEquipmentStatus } from '../utils/sheetsConfig.js';
 import { getSheetMutex } from '../utils/mutex.js';
+import { withCache, invalidateCache } from '../utils/cache.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const doc = await getDoc();
-    let todasOSs = [];
+    const data = await withCache('oss', async () => {
+      const doc = await getDoc();
+      let todasOSs = [];
 
-    for (const conf of OS_SHEETS) {
-      const sheet = doc.sheetsByTitle[conf.title];
-      if (sheet) {
-        await sheet.loadHeaderRow(conf.headerRow);
-        const rows = await sheet.getRows();
+      for (const conf of OS_SHEETS) {
+        const sheet = doc.sheetsByTitle[conf.title];
+        if (sheet) {
+          await sheet.loadHeaderRow(conf.headerRow);
+          const rows = await sheet.getRows();
 
-        const oss = rows
-          .filter(row => row.get('ORDEM DE SERVIÇO') || row.get('PROCESSO'))
-          .map(row => ({
-            id: row.rowNumber,
-            categoria: conf.category,
-            sheetTitle: conf.title,
-            contrato: row.get('CONTRATO'),
-            processo: row.get('PROCESSO'),
-            ordem_servico: row.get('ORDEM DE SERVIÇO'),
-            equipamento: row.get('EQUIPAMENTO'),
-            sei: row.get('SEI'),
-            tipo_servico: row.get('TIPO DE SERVIÇO'),
-            modelo: row.get('MODELO'),
-            numero_serie: row.get('N° DE SÉRIE'),
-            unidade: row.get('UNIDADE'),
-            data_assinatura: row.get('DATA DE ASSINATURA - DG/PPMA'),
-            data_tarefa: row.get('DATA DA TAREFA'),
-            data_tratativa: row.get('DATA DA TRATATIVA'),
-            tarefa: row.get('TAREFA'),
-            tratativa: row.get('TRATATIVA'),
-            observacoes_tarefa: row.get('OBSERVAÇÕES DA TAREFA'),
-            observacoes_tratativa: row.get('OBSERVARÇÕES DA TRATATIVA'),
-            status: row.get('STATUS'),
-            cronograma: row.get('CRONOGRAMA')
-          }));
-        todasOSs = [...todasOSs, ...oss];
+          const oss = rows
+            .filter(row => row.get('ORDEM DE SERVIÇO') || row.get('PROCESSO'))
+            .map(row => ({
+              id: row.rowNumber,
+              categoria: conf.category,
+              sheetTitle: conf.title,
+              contrato: row.get('CONTRATO'),
+              processo: row.get('PROCESSO'),
+              ordem_servico: row.get('ORDEM DE SERVIÇO'),
+              equipamento: row.get('EQUIPAMENTO'),
+              sei: row.get('SEI'),
+              tipo_servico: row.get('TIPO DE SERVIÇO'),
+              modelo: row.get('MODELO'),
+              numero_serie: row.get('N° DE SÉRIE'),
+              unidade: row.get('UNIDADE'),
+              data_assinatura: row.get('DATA DE ASSINATURA - DG/PPMA'),
+              data_tarefa: row.get('DATA DA TAREFA'),
+              data_tratativa: row.get('DATA DA TRATATIVA'),
+              tarefa: row.get('TAREFA'),
+              tratativa: row.get('TRATATIVA'),
+              observacoes_tarefa: row.get('OBSERVAÇÕES DA TAREFA'),
+              observacoes_tratativa: row.get('OBSERVARÇÕES DA TRATATIVA'),
+              status: row.get('STATUS'),
+              cronograma: row.get('CRONOGRAMA')
+            }));
+          todasOSs = [...todasOSs, ...oss];
+        }
       }
-    }
-    res.json(todasOSs.reverse());
+      return todasOSs.reverse();
+    });
+    res.json(data);
   } catch (error) {
     console.error('Erro GET OSs:', error);
     res.status(500).json({ error: error.message });
@@ -120,6 +124,8 @@ router.post('/', async (req, res) => {
         console.error('Erro na automação OS -> Equipamento:', e);
       }
 
+      invalidateCache('oss');
+      invalidateCache('equipamentos');
       res.status(201).json({ message: "OS criadas com sucesso", count: newRows.length });
     } finally {
       release();
@@ -199,6 +205,8 @@ router.put('/:id', async (req, res) => {
         console.error('Erro na automação OS -> Equipamento:', e);
       }
 
+      invalidateCache('oss');
+      invalidateCache('equipamentos');
       res.json({ ...data, id: rowToUpdate.rowNumber, sheetTitle: conf.title });
     } finally {
       release();
@@ -231,6 +239,8 @@ router.delete('/:id', async (req, res) => {
       if (!rowToDelete) return res.status(404).json({ error: 'OS não encontrada' });
 
       await rowToDelete.delete();
+      invalidateCache('oss');
+      invalidateCache('equipamentos');
       res.json({ message: 'OS deletada' });
     } finally {
       release();

@@ -63,6 +63,14 @@ export const FinanceiroView = () => {
       if (v.length > 4) value = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
       else if (v.length > 2) value = `${v.slice(0, 2)}/${v.slice(2)}`;
       else value = v;
+    } else if (name === 'valor_nf' || name === 'valor_ob') {
+      let v = value.replace(/\D/g, '');
+      if (v) {
+        v = (parseInt(v, 10) / 100).toFixed(2);
+        value = 'R$ ' + v.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+      } else {
+        value = '';
+      }
     }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -124,7 +132,7 @@ export const FinanceiroView = () => {
 
   // Filtros
   const filteredData = financeiroData.filter(item => {
-    const searchStr = `${item.objeto} ${item.sei} ${item.nota_fiscal} ${item.ordem_bancaria}`.toLowerCase();
+    const searchStr = `${item.contrato} ${item.objeto} ${item.sei} ${item.nota_fiscal} ${item.ordem_bancaria}`.toLowerCase();
     const matchSearch = searchStr.includes(searchTerm.toLowerCase());
     const matchContrato = selectedContratos.length === 0 || selectedContratos.includes(item.contrato);
     const matchStatus = statusOBFilter === 'Todos' || (item.status_ob || '').toLowerCase().includes(statusOBFilter.toLowerCase());
@@ -171,7 +179,7 @@ export const FinanceiroView = () => {
           
           <div className="flex flex-col md:flex-row flex-wrap gap-3 items-start md:items-center w-full xl:w-auto">
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-              {['Todos', 'Pago', 'Aguardando'].map(status => (
+              {['Todos', 'Pago', 'Pendente'].map(status => (
               <button
                 key={status}
                 onClick={() => setStatusOBFilter(status)}
@@ -327,32 +335,38 @@ export const FinanceiroView = () => {
                     {expandedRow === item.id && (
                       <tr className="bg-slate-50/50 dark:bg-slate-800/20">
                         <td colSpan="7" className="px-14 py-6 border-b border-slate-100 dark:border-slate-800">
-                          <div className="grid grid-cols-3 gap-8">
-                            <div className="space-y-4">
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Fonte de Custeio</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.fonte_custeio || '-'}</p>
-                              </div>
+                          <div className="flex flex-wrap items-center justify-between gap-6 bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
+                            <div className="flex flex-col items-center flex-1">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Fonte de Custeio</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.fonte_custeio || '-'}</p>
                             </div>
-                            <div className="space-y-4">
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ordem Bancária (OB)</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.ordem_bancaria || '-'}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status OB</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.status_ob || '-'}</p>
-                              </div>
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            <div className="flex flex-col items-center flex-1">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ordem Bancária (OB)</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.ordem_bancaria || '-'}</p>
                             </div>
-                            <div className="space-y-4">
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valor OB</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.valor_ob || '-'}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Pagamento</p>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{item.data_pagamento || '-'}</p>
-                              </div>
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            <div className="flex flex-col items-center flex-1">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valor OB</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.valor_ob || '-'}</p>
+                            </div>
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            <div className="flex flex-col items-center flex-1">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Pagamento</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.data_pagamento || '-'}</p>
+                            </div>
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            <div className="flex flex-col items-center flex-1">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status OB</p>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                (item.status_ob || '').toLowerCase().includes('pendente')
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                                  : (item.status_ob || '').toLowerCase().includes('pago')
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                              }`}>
+                                {item.status_ob || '-'}
+                              </span>
                             </div>
                           </div>
                         </td>

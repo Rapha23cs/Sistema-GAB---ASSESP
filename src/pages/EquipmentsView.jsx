@@ -6,7 +6,7 @@ import { ContractBadge, EqStatusBadge } from '../components/Badges';
 import { EquipmentModal } from '../components/modals/EquipmentModal';
 import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
 import toast from 'react-hot-toast';
-import { formatDateTimeBr } from '../utils/dateUtils';
+import { formatDateTimeBr, daysUntil } from '../utils/dateUtils';
 
 export const EquipmentsView = () => {
   const [filterTypes, setFilterTypes] = useState([]);
@@ -288,6 +288,31 @@ export const EquipmentsView = () => {
     const status = (e.status || '').toLowerCase();
     return status.includes('inoperante') || status.includes('condenado');
   }).length;
+
+  const renderGarantiaIcon = (garantiaStr) => {
+    if (!garantiaStr || typeof garantiaStr !== 'string') return null;
+    if (/[a-zA-Z]/.test(garantiaStr)) return null; // Ignora se tiver texto
+    
+    // Verifica se a string parece uma data e tem números (ex: 10/10/2024, 10-10-24)
+    if (!/^[\d\/\-\.\s]+$/.test(garantiaStr.trim())) return null;
+
+    const dias = daysUntil(garantiaStr);
+    if (dias === null) return null;
+    
+    if (dias < 0) {
+      return (
+        <span className="inline-flex items-center justify-center w-6 h-6 bg-rose-100 dark:bg-rose-900/30 rounded-full ml-2 cursor-help transition-transform hover:scale-110" title="Garantia Vencida">
+          <Icons.AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center justify-center w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full ml-2 cursor-help transition-transform hover:scale-110" title="Garantia em Dia">
+          <Icons.CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        </span>
+      );
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -595,7 +620,7 @@ export const EquipmentsView = () => {
                                 {/* Data de Garantia */}
                                 <div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-2 flex items-center gap-2">
-                                    <Icons.Calendar className="w-4 h-4" /> Data de Garantia
+                                    <Icons.Calendar className="w-4 h-4" /> Data de Garantia {renderGarantiaIcon(eq.data_garantia)}
                                   </p>
                                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                                     {eq.data_garantia || 'Não se aplica'}

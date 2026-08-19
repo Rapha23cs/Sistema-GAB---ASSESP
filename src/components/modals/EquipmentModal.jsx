@@ -84,6 +84,12 @@ export const EquipmentModal = ({
               </datalist>
             </div>
 
+            {/* Data de Garantia */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Data de Garantia</label>
+              <input name="data_garantia" value={formData.data_garantia || ''} onChange={handleInputChange} type="text" placeholder="Ex: 10/10/2026 ou 12 meses" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200" />
+            </div>
+
             {/* Ordem de Serviço Atual */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Ordem de Serviço (atual)</label>

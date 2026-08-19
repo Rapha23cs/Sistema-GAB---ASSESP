@@ -206,9 +206,13 @@ export const DashboardView = ({ setActiveTab }) => {
   [...contratosVencendoList]
     .slice(0, 3)
     .forEach((c, i) => {
+      const dates = (c.vigencia || '').match(/\d{2}\/\d{2}\/\d{4}/g);
+      const lastDateStr = dates && dates.length > 0 ? dates[dates.length - 1] : null;
+      const diasRestantes = lastDateStr ? daysUntil(lastDateStr) : 'alguns';
+      
       atividadesRecentes.push({
         title: `Atenção: Contrato Vencendo`,
-        desc: `${c.numero_contrato || c.processo} vence em ${c.diasRestantes} dias.`,
+        desc: `${c.numero_contrato || c.processo} vence em ${diasRestantes} dias.`,
         time: c.vigencia,
         timestamp: Date.now() + 100000 - i, // Alta prioridade
         Icon: Icons.AlertCircle,
