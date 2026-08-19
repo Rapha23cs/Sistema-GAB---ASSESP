@@ -260,8 +260,8 @@ export const EquipmentsView = () => {
     if (filterStatuses.length > 0) {
       matchStatus = filterStatuses.some(fs => {
         if (fs === 'Operante') return statusVal.includes('funcionando') || statusVal === 'operante';
-        if (fs === 'Operante com Pendência') return statusVal.includes('análise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal === 'em manutenção' || statusVal === 'em manutencao';
-        if (fs === 'Inoperante') return statusVal.includes('inoperante') || statusVal.includes('condenado');
+        if (fs === 'Operante com Pendência') return (statusVal.includes('análise') || statusVal.includes('analise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal.includes('manutenção') || statusVal.includes('manutencao')) && !statusVal.includes('laboratorial');
+        if (fs === 'Inoperante') return statusVal.includes('inoperante') || statusVal.includes('condenado') || statusVal.includes('laboratorial');
         return false;
       });
     }
@@ -290,21 +290,32 @@ export const EquipmentsView = () => {
   const filteredSeries = [...new Set(equipamentos.filter(e => e.categoria === newEqData.categoria && e.unidade === newEqData.unidade).map(e => e.numero_serie).filter(Boolean))].sort();
 
   // KPIs
+  const isPorticosOnly = filterTypes.length === 1 && filterTypes[0] === 'Pórticos';
+
   const totalEquipments = filteredEquipments.length;
   const operantes = filteredEquipments.filter(e => {
     const status = (e.status || '').toLowerCase();
     return status.includes('funcionando') || status === 'operante';
   }).length;
   
-  const funcionandoComPendencia = filteredEquipments.filter(e => {
-    const status = (e.status || '').toLowerCase();
-    return status.includes('análise') || status.includes('avaliação') || status.includes('pendência') || status.includes('pendencia') || status === 'em manutenção' || status === 'em manutencao';
-  }).length;
-  
-  const inoperantes = filteredEquipments.filter(e => {
-    const status = (e.status || '').toLowerCase();
-    return status.includes('inoperante') || status.includes('condenado');
-  }).length;
+  const kpi3Label = isPorticosOnly ? 'Condenados' : 'Operante com Pendência';
+  const kpi3Value = isPorticosOnly
+    ? filteredEquipments.filter(e => (e.status || '').toLowerCase().includes('condenado')).length
+    : filteredEquipments.filter(e => {
+        const status = (e.status || '').toLowerCase();
+        return (status.includes('análise') || status.includes('analise') || status.includes('avaliação') || status.includes('pendência') || status.includes('pendencia') || status.includes('manutenção') || status.includes('manutencao')) && !status.includes('laboratorial');
+      }).length;
+      
+  const kpi4Label = 'Inoperantes';
+  const kpi4Value = isPorticosOnly
+    ? filteredEquipments.filter(e => {
+        const s = (e.status || '').toLowerCase();
+        return s.includes('inoperante') || s.includes('laboratorial');
+      }).length
+    : filteredEquipments.filter(e => {
+        const status = (e.status || '').toLowerCase();
+        return status.includes('inoperante') || status.includes('condenado') || status.includes('laboratorial');
+      }).length;
 
   const renderGarantiaIcon = (garantiaStr) => {
     if (!garantiaStr || typeof garantiaStr !== 'string') return null;
@@ -338,8 +349,8 @@ export const EquipmentsView = () => {
         {[
           { label: 'Total de Equipamentos', value: totalEquipments, color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
           { label: 'Operantes', value: operantes, color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Operante com Pendência', value: funcionandoComPendencia, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Inoperantes', value: inoperantes, color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: kpi3Label, value: kpi3Value, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
+          { label: kpi4Label, value: kpi4Value, color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
         ].map((stat, i) => (
           <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-default group`}>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">{stat.label}</p>

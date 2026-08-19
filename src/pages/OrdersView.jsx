@@ -73,7 +73,9 @@ export const OrdersView = () => {
                 tarefa: os.tarefa,
                 data_tarefa: os.data_tarefa,
                 tratativa: os.tratativa || '',
-                observacoes_tarefa: os.observacoes_tarefa || ''
+                data_tratativa: os.data_tratativa || '',
+                observacoes_tarefa: os.observacoes_tarefa || '',
+                observacoes_tratativa: os.observacoes_tratativa || ''
               });
             }
           });

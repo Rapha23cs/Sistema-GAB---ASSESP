@@ -277,6 +277,12 @@ export const DashboardView = ({ setActiveTab }) => {
 
     const dateStr = formatDateTimeBr(new Date());
     
+    // Preparar dados das novas funcionalidades
+    const licitacoesEmAndamentoList = licitacoes.filter(l => {
+      const s = norm(l.status);
+      return !s.includes('conclui') && !s.includes('finaliz');
+    });
+
     let html = `
       <!DOCTYPE html>
       <html>
@@ -287,10 +293,10 @@ export const DashboardView = ({ setActiveTab }) => {
             h1 { text-align: center; color: #1e3a8a; font-size: 24px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
             p.subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
             
-            .stats-grid { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 30px; }
-            .stat-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; flex: 1; }
+            .stats-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+            .stat-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; flex: 1; min-width: 120px; }
             .stat-value { font-size: 24px; font-weight: bold; color: #0f172a; }
-            .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; margin-top: 5px; }
+            .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; margin-top: 5px; font-weight: 600; }
 
             h2 { color: #0f172a; font-size: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; text-transform: uppercase; }
             
@@ -298,10 +304,17 @@ export const DashboardView = ({ setActiveTab }) => {
             th { background-color: #f1f5f9; color: #475569; font-weight: bold; padding: 10px; text-align: left; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 10px; }
             td { padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155; }
             
+            .badge { padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+            .badge-red { background: #ffe4e6; color: #e11d48; }
+            .badge-orange { background: #fef3c7; color: #d97706; }
+            .badge-blue { background: #dbeafe; color: #2563eb; }
+            .badge-purple { background: #f3e8ff; color: #9333ea; }
+            .badge-emerald { background: #d1fae5; color: #059669; }
+
             @media print {
               @page { margin: 1cm; }
               body { padding: 0; }
-              .stat-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .stat-box, .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
           </style>
         </head>
@@ -316,15 +329,19 @@ export const DashboardView = ({ setActiveTab }) => {
             </div>
             <div class="stat-box">
               <div class="stat-value" style="color: #e11d48;">${equipamentosInoperantes}</div>
-              <div class="stat-label">Equip. Problema</div>
+              <div class="stat-label">Equip. c/ Problema</div>
             </div>
             <div class="stat-box">
               <div class="stat-value" style="color: #d97706;">${contratosAVencer}</div>
               <div class="stat-label">Contratos Vencendo</div>
             </div>
             <div class="stat-box">
-              <div class="stat-value" style="color: #059669;">${contratosAtivos}</div>
-              <div class="stat-label">Contratos Vigentes</div>
+              <div class="stat-value" style="color: #9333ea;">${licitacoesAbertas}</div>
+              <div class="stat-label">Licitações Abertas</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" style="color: #059669;">${financeiroPendentes.length}</div>
+              <div class="stat-label">Pendências Financeiras</div>
             </div>
           </div>
 
@@ -344,13 +361,81 @@ export const DashboardView = ({ setActiveTab }) => {
                   <td><strong>${e.equipamento || e.categoria}</strong><br/>${e.modelo || '-'}</td>
                   <td>${e.numero_serie || '-'}</td>
                   <td>${e.unidade || '-'}</td>
-                  <td style="color: #e11d48; font-weight: bold;">${e.status || '-'}</td>
+                  <td><span class="badge ${eqInoperantes.includes(e) ? 'badge-red' : 'badge-orange'}">${e.status || '-'}</span></td>
                 </tr>
               `).join('') || '<tr><td colspan="4" style="text-align:center;">Nenhum equipamento com problema.</td></tr>'}
             </tbody>
           </table>
 
-          <h2>2. Contratos Vencendo (Próximos 90 dias)</h2>
+          <h2>2. OS em Andamento (Pendentes / Aguardando)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Ordem de Serviço</th>
+                <th>Equipamento (Modelo)</th>
+                <th>Unidade</th>
+                <th>Série</th>
+                <th>Status Global</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${groupedOS.filter(o => o.statusGlobal === 'pendente' || o.statusGlobal === 'aguardando').map(o => `
+                <tr>
+                  <td><strong>${o.ordem_servico || '-'}</strong></td>
+                  <td>${o.equipamento || '-'}<br/><span style="font-size:10px; color:#64748b;">${o.modelo || '-'}</span></td>
+                  <td>${o.unidade || '-'}</td>
+                  <td>${o.numero_serie || '-'}</td>
+                  <td><span class="badge ${o.statusGlobal === 'pendente' ? 'badge-blue' : 'badge-orange'}">${o.statusGlobal.toUpperCase()}</span></td>
+                </tr>
+              `).join('') || '<tr><td colspan="5" style="text-align:center;">Nenhuma OS em andamento.</td></tr>'}
+            </tbody>
+          </table>
+
+          <h2>3. Pendências Financeiras (Notas ou Ordens Bancárias)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Contrato/Empresa</th>
+                <th>Objeto</th>
+                <th>Nota Fiscal (Status)</th>
+                <th>Ordem Bancária (Status)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${financeiroPendentes.map(f => `
+                <tr>
+                  <td><strong>${f.contrato || '-'}</strong><br/>${f.empresa || '-'}</td>
+                  <td>${f.objeto || '-'}</td>
+                  <td>${f.nota_fiscal || '-'} <br/> <span class="badge ${norm(f.status_nf).includes('pendente') ? 'badge-red' : 'badge-emerald'}">${f.status_nf || '-'}</span></td>
+                  <td>${f.ordem_bancaria || '-'} <br/> <span class="badge ${norm(f.status_ob).includes('aguardando') ? 'badge-orange' : 'badge-blue'}">${f.status_ob || '-'}</span></td>
+                </tr>
+              `).join('') || '<tr><td colspan="4" style="text-align:center;">Nenhuma pendência financeira.</td></tr>'}
+            </tbody>
+          </table>
+
+          <h2>4. Licitações em Andamento</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Processo</th>
+                <th>Objeto</th>
+                <th>Fase Atual</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${licitacoesEmAndamentoList.map(l => `
+                <tr>
+                  <td><strong>${l.processo_original || '-'}</strong><br/>Stargov: ${l.stargov || '-'}</td>
+                  <td>${l.objeto || '-'}</td>
+                  <td>${l.fase_atual || '-'}</td>
+                  <td><span class="badge badge-purple">${l.status || '-'}</span></td>
+                </tr>
+              `).join('') || '<tr><td colspan="4" style="text-align:center;">Nenhuma licitação em andamento.</td></tr>'}
+            </tbody>
+          </table>
+
+          <h2>5. Contratos Vencendo (Próximos 90 dias)</h2>
           <table>
             <thead>
               <tr>
@@ -366,31 +451,9 @@ export const DashboardView = ({ setActiveTab }) => {
                   <td><strong>${c.numero_contrato || '-'}</strong><br/><span style="font-size:10px;">Proc: ${c.processo || '-'}</span></td>
                   <td>${c.objeto || '-'}</td>
                   <td>${c.vigencia || '-'}</td>
-                  <td style="color: #d97706; font-weight: bold;">${c.diasRestantes} dias</td>
+                  <td><span class="badge badge-orange">${c.diasRestantes} dias</span></td>
                 </tr>
               `).join('') || '<tr><td colspan="4" style="text-align:center;">Nenhum contrato vencendo em breve.</td></tr>'}
-            </tbody>
-          </table>
-
-          <h2>3. OS em Andamento (Pendentes / Aguardando)</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Ordem de Serviço</th>
-                <th>Equipamento</th>
-                <th>Data</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${groupedOS.filter(o => o.statusGlobal === 'pendente' || o.statusGlobal === 'aguardando').map(o => `
-                <tr>
-                  <td><strong>${o.ordem_servico || '-'}</strong></td>
-                  <td>${o.equipamento || '-'}</td>
-                  <td>${o.data_tarefa ? formatDateDisplay(o.data_tarefa) : '-'}</td>
-                  <td style="color: #2563eb; font-weight: bold;">${o.statusGlobal.toUpperCase()}</td>
-                </tr>
-              `).join('') || '<tr><td colspan="4" style="text-align:center;">Nenhuma OS em andamento.</td></tr>'}
             </tbody>
           </table>
 

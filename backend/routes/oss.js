@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
               tarefa: row.get('TAREFA'),
               tratativa: row.get('TRATATIVA'),
               observacoes_tarefa: row.get('OBSERVAÇÕES DA TAREFA'),
-              observacoes_tratativa: row.get('OBSERVARÇÕES DA TRATATIVA'),
+              observacoes_tratativa: row.get('OBSERVAÇÕES DA TRATATIVA') || row.get('OBSERVARÇÕES DA TRATATIVA'),
               status: row.get('STATUS'),
               cronograma: row.get('CRONOGRAMA')
             }));
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
           'TAREFA': item.tarefa || '',
           'TRATATIVA': item.tratativa || '',
           'OBSERVAÇÕES DA TAREFA': item.observacoes_tarefa || '',
-          'OBSERVARÇÕES DA TRATATIVA': item.observacoes_tratativa || '',
+          'OBSERVAÇÕES DA TRATATIVA': item.observacoes_tratativa || '',
           'STATUS': item.status || ''
         };
       });
@@ -183,7 +183,7 @@ router.put('/:id', async (req, res) => {
       if (data.tarefa !== undefined) rowData['TAREFA'] = data.tarefa;
       if (data.tratativa !== undefined) rowData['TRATATIVA'] = data.tratativa;
       if (data.observacoes_tarefa !== undefined) rowData['OBSERVAÇÕES DA TAREFA'] = data.observacoes_tarefa;
-      if (data.observacoes_tratativa !== undefined) rowData['OBSERVARÇÕES DA TRATATIVA'] = data.observacoes_tratativa;
+      if (data.observacoes_tratativa !== undefined) rowData['OBSERVAÇÕES DA TRATATIVA'] = data.observacoes_tratativa;
       if (data.status !== undefined) rowData['STATUS'] = data.status;
 
       rowToUpdate.assign(rowData);
