@@ -19,7 +19,8 @@ export const EditOSModal = ({ os, onSave, onCancel }) => {
         tipo_servico: os.tipo_servico || 'Preventiva',
         data_assinatura: os.data_assinatura || '',
         processo: os.processo || '',
-        contrato: os.contrato || ''
+        contrato: os.contrato || '',
+        link_ordem: os.link_ordem || ''
       });
     }
   }, [os]);
@@ -116,6 +117,18 @@ export const EditOSModal = ({ os, onSave, onCancel }) => {
                   placeholder="Ex: 01/01/2026" 
                   maxLength={10}
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200 font-mono" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Link Ordem</label>
+                <input 
+                  name="link_ordem" 
+                  value={formData.link_ordem} 
+                  onChange={handleChange} 
+                  type="url" 
+                  placeholder="https://..." 
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200" 
                 />
               </div>
 

@@ -21,7 +21,9 @@ export const UpdateTaskModal = ({ eq, onSave, onCancel }) => {
         status: eq.status || 'AGUARDANDO',
         tratativa: eq.tratativa || '',
         data_tratativa: eq.data_tratativa || '',
-        observacoes_tratativa: eq.observacoes_tratativa || ''
+        observacoes_tratativa: eq.observacoes_tratativa || '',
+        link_tarefa: eq.link_tarefa || '',
+        link_tratativa: eq.link_tratativa || ''
       });
     }
   }, [eq]);
@@ -94,6 +96,18 @@ export const UpdateTaskModal = ({ eq, onSave, onCancel }) => {
                 />
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Link Tarefa</label>
+                <input
+                  type="url"
+                  name="link_tarefa"
+                  value={formData.link_tarefa}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                />
+              </div>
+
               <div className="flex flex-col gap-1.5 pt-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status da Máquina (Após Tarefa)</label>
                 <select
@@ -146,6 +160,18 @@ export const UpdateTaskModal = ({ eq, onSave, onCancel }) => {
                   placeholder="Descreva a solução da pendência..."
                   rows={2}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Link Tratativa</label>
+                <input
+                  type="url"
+                  name="link_tratativa"
+                  value={formData.link_tratativa}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                 />
               </div>
             </div>

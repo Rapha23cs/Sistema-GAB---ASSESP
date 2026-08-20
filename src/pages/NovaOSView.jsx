@@ -14,6 +14,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
     unidade: '', // we will replace this with unidades array
     unidades: [],
     data_assinatura: '',
+    link_ordem: '',
     equipamentos: [],
     status: 'AGUARDANDO',
     cronograma: ''
@@ -166,6 +167,10 @@ export const NovaOSView = ({ onCancel, onSave }) => {
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Data de Assinatura</label>
               <input name="data_assinatura" value={formData.data_assinatura} onChange={handleChange} type="text" placeholder="Ex: 01/01/2026" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Link Ordem</label>
+              <input name="link_ordem" value={formData.link_ordem} onChange={handleChange} type="url" placeholder="https://..." className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Contrato (Automático)</label>

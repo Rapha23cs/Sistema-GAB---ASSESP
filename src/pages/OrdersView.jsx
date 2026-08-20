@@ -78,7 +78,9 @@ export const OrdersView = () => {
                 tratativa: os.tratativa || '',
                 data_tratativa: os.data_tratativa || '',
                 observacoes_tarefa: os.observacoes_tarefa || '',
-                observacoes_tratativa: os.observacoes_tratativa || ''
+                observacoes_tratativa: os.observacoes_tratativa || '',
+                link_tarefa: os.link_tarefa || '',
+                link_tratativa: os.link_tratativa || ''
               });
             }
           });
@@ -229,7 +231,9 @@ export const OrdersView = () => {
         data_tratativa: updatedEq.data_tratativa,
         observacoes_tratativa: updatedEq.observacoes_tratativa,
         observacoes_tarefa: updatedEq.observacoes_tarefa,
-        status: updatedEq.status
+        status: updatedEq.status,
+        link_tarefa: updatedEq.link_tarefa,
+        link_tratativa: updatedEq.link_tratativa
       })
     })
     .then(res => {
@@ -259,7 +263,8 @@ export const OrdersView = () => {
             ordem_servico: formData.ordem_servico,
             sei: formData.sei,
             tipo_servico: formData.tipo_servico,
-            data_assinatura: formData.data_assinatura
+            data_assinatura: formData.data_assinatura,
+            link_ordem: formData.link_ordem
           })
         });
         if (!res.ok) hasError = true;
@@ -645,7 +650,14 @@ export const OrdersView = () => {
                                </div>
                                <div>
                                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Data Assinatura</p>
-                                 <p className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Calendar /> {order.data_assinatura}</p>
+                                 <div className="flex items-center gap-2">
+                                   <p className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Icons.Calendar /> {order.data_assinatura || '-'}</p>
+                                   {order.link_ordem && (
+                                     <a href={order.link_ordem} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors" title="Abrir Link da Ordem">
+                                       <Icons.ExternalLink size={16} />
+                                     </a>
+                                   )}
+                                 </div>
                                </div>
 
                             </div>
@@ -818,7 +830,14 @@ export const OrdersView = () => {
                                         {eq.tarefa && (
                                           <div className="mt-2 flex flex-col gap-2">
                                             <div className="bg-white dark:bg-slate-900/50 rounded-lg p-2.5 text-xs border border-slate-100 dark:border-slate-700/50 flex flex-wrap justify-between items-center gap-2">
-                                              <span className="text-slate-500 dark:text-slate-400 font-medium">Tarefa: <span className="text-slate-700 dark:text-slate-200 font-bold">{eq.tarefa}</span></span>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium">Tarefa: <span className="text-slate-700 dark:text-slate-200 font-bold">{eq.tarefa}</span></span>
+                                                {eq.link_tarefa && (
+                                                  <a href={eq.link_tarefa} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Abrir Link da Tarefa">
+                                                    <Icons.ExternalLink size={14} />
+                                                  </a>
+                                                )}
+                                              </div>
                                               {eq.data_tarefa && (
                                                 <span className="text-slate-400 dark:text-slate-500 font-mono text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                                                   {eq.data_tarefa}
@@ -828,7 +847,14 @@ export const OrdersView = () => {
                                             {(eq.tratativa || eq.observacoes_tratativa) && (
                                                 <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-lg p-2.5 text-xs">
                                                   <div className="flex items-center justify-between mb-1">
-                                                    <span className="font-bold text-blue-700 dark:text-blue-400 uppercase text-[10px]">Tratativa {eq.tratativa ? `#${eq.tratativa}` : ''}</span>
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="font-bold text-blue-700 dark:text-blue-400 uppercase text-[10px]">Tratativa {eq.tratativa ? `#${eq.tratativa}` : ''}</span>
+                                                      {eq.link_tratativa && (
+                                                        <a href={eq.link_tratativa} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Abrir Link da Tratativa">
+                                                          <Icons.ExternalLink size={14} />
+                                                        </a>
+                                                      )}
+                                                    </div>
                                                     {eq.data_tratativa && <span className="text-[10px] text-blue-600 dark:text-blue-500 font-medium">{eq.data_tratativa}</span>}
                                                   </div>
                                                   {eq.observacoes_tratativa && (

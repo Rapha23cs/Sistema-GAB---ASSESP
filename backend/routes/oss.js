@@ -41,7 +41,10 @@ router.get('/', async (req, res) => {
               observacoes_tarefa: row.get('OBSERVAÇÕES DA TAREFA'),
               observacoes_tratativa: row.get('OBSERVAÇÕES DA TRATATIVA') || row.get('OBSERVARÇÕES DA TRATATIVA'),
               status: row.get('STATUS'),
-              cronograma: row.get('CRONOGRAMA')
+              cronograma: row.get('CRONOGRAMA'),
+              link_ordem: row.get('LINK ORDEM'),
+              link_tarefa: row.get('LINK TAREFA'),
+              link_tratativa: row.get('LINK TRATATIVA')
             }));
           todasOSs = [...todasOSs, ...oss];
         }
@@ -103,7 +106,10 @@ router.post('/', async (req, res) => {
           'TRATATIVA': item.tratativa || '',
           'OBSERVAÇÕES DA TAREFA': item.observacoes_tarefa || '',
           'OBSERVAÇÕES DA TRATATIVA': item.observacoes_tratativa || '',
-          'STATUS': item.status || ''
+          'STATUS': item.status || '',
+          'LINK ORDEM': item.link_ordem || '',
+          'LINK TAREFA': item.link_tarefa || '',
+          'LINK TRATATIVA': item.link_tratativa || ''
         };
       });
 
@@ -185,6 +191,9 @@ router.put('/:id', async (req, res) => {
       if (data.observacoes_tarefa !== undefined) rowData['OBSERVAÇÕES DA TAREFA'] = data.observacoes_tarefa;
       if (data.observacoes_tratativa !== undefined) rowData['OBSERVAÇÕES DA TRATATIVA'] = data.observacoes_tratativa;
       if (data.status !== undefined) rowData['STATUS'] = data.status;
+      if (data.link_ordem !== undefined) rowData['LINK ORDEM'] = data.link_ordem;
+      if (data.link_tarefa !== undefined) rowData['LINK TAREFA'] = data.link_tarefa;
+      if (data.link_tratativa !== undefined) rowData['LINK TRATATIVA'] = data.link_tratativa;
 
       rowToUpdate.assign(rowData);
       await rowToUpdate.save();
