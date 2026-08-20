@@ -32,7 +32,7 @@ export async function getDoc() {
       key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
-  } 
+  }
   // 2. Fallback para OAuth2 (Desenvolvimento local com token.json)
   else {
     let credentials;

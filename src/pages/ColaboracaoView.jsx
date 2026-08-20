@@ -17,6 +17,7 @@ export const ColaboracaoView = () => {
   const [highlightedTaskId, setHighlightedTaskId] = useState(null);
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+  const [userFilter, setUserFilter] = useState(null);
 
   // Busca usuários para popular o painel lateral e o dropdown de atribuição
   const fetchUsers = async () => {
@@ -259,10 +260,12 @@ export const ColaboracaoView = () => {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {isLoading ? (
             <p className="text-center text-slate-500 my-8">Carregando tarefas...</p>
-          ) : tasks.length === 0 ? (
-            <p className="text-center text-slate-500 my-8">Nenhuma tarefa encontrada.</p>
+          ) : tasks.filter(t => !userFilter || t.assignee === userFilter).length === 0 ? (
+            <p className="text-center text-slate-500 my-8">
+              {userFilter ? `Nenhuma tarefa atribuída a ${userFilter}.` : 'Nenhuma tarefa encontrada.'}
+            </p>
           ) : (
-            tasks.map((task) => {
+            tasks.filter(t => !userFilter || t.assignee === userFilter).map((task) => {
               const isHighlighted = highlightedTaskId === task.id;
               return (
               <div 
@@ -415,10 +418,24 @@ export const ColaboracaoView = () => {
         </div>
         
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex-1 transition-colors duration-500">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Usuários Ativos no Sistema</h3>
-          <div className="space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4 flex justify-between items-center">
+            Usuários Ativos no Sistema
+            {userFilter && (
+              <span 
+                onClick={() => setUserFilter(null)}
+                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer normal-case bg-blue-50 px-2 py-1 rounded-md"
+              >
+                Limpar filtro
+              </span>
+            )}
+          </h3>
+          <div className="space-y-2">
             {activeUsers.map((u) => (
-              <div key={u.id} className="flex items-center gap-3 group cursor-pointer">
+              <div 
+                key={u.id} 
+                onClick={() => setUserFilter(userFilter === u.nome ? null : u.nome)}
+                className={`flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition-colors ${userFilter === u.nome ? 'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-500/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+              >
                 <div className="relative">
                   <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400 font-bold">
                     {u.nome.charAt(0).toUpperCase()}

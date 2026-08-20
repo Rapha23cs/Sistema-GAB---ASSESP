@@ -80,7 +80,7 @@ export default function App() {
     const routeMap = {
       '': 'Dashboard',
       'dashboard': 'Dashboard',
-      'ordens': 'Ordens',
+      'ordens': 'Ordens de Serviço',
       'equipamentos': 'Equipamentos',
       'contratos': 'Contratos',
       'licitacoes': 'Licitações',
@@ -124,13 +124,13 @@ export default function App() {
 
           <nav className="flex-1 px-4 py-6 space-y-2">
             {[
-              'Dashboard', 'Colaboração', 'Ordens', 'Equipamentos', 'Contratos', 'Licitações', 'Financeiro', 'Usuários', 'Configurações'
+              'Dashboard', 'Colaboração', 'Contratos', 'Licitações', 'Financeiro', 'Ordens de Serviço', 'Equipamentos', 'Usuários', 'Configurações'
             ].map((item) => {
               const isActive = activeTab === item;
               let IconComponent;
               switch (item) {
                 case 'Dashboard': IconComponent = Icons.Home; break;
-                case 'Ordens': IconComponent = Icons.Briefcase; break;
+                case 'Ordens de Serviço': IconComponent = Icons.Briefcase; break;
                 case 'Equipamentos': IconComponent = Icons.Monitor; break;
                 case 'Contratos': IconComponent = Icons.FileSignature; break;
                 case 'Licitações': IconComponent = Icons.Landmark; break;
@@ -141,7 +141,7 @@ export default function App() {
                 default: IconComponent = Icons.Home;
               }
 
-              const path = item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              const path = item === 'Ordens de Serviço' ? 'ordens' : item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
               return (
                 <NavLink
                   to={`/${path}`}
