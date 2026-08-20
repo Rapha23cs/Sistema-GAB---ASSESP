@@ -21,9 +21,12 @@ export const OrdersView = () => {
   const [editingGlobalOS, setEditingGlobalOS] = useState(null);
 
   // Filtros
-  const [filterType, setFilterType] = useState('Todos');
-  const [filterStatus, setFilterStatus] = useState('Todos');
-  const [filterContract, setFilterContract] = useState('Todos');
+  const [filterTypes, setFilterTypes] = useState([]);
+  const [isTypesOpen, setIsTypesOpen] = useState(false);
+  const [filterStatuses, setFilterStatuses] = useState([]);
+  const [isStatusesOpen, setIsStatusesOpen] = useState(false);
+  const [filterContracts, setFilterContracts] = useState([]);
+  const [isContractsOpen, setIsContractsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [innerSearchTerm, setInnerSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -119,9 +122,9 @@ export const OrdersView = () => {
   };
 
   const clearFilters = () => {
-    setFilterType('Todos');
-    setFilterStatus('Todos');
-    setFilterContract('Todos');
+    setFilterTypes([]);
+    setFilterStatuses([]);
+    setFilterContracts([]);
     setSearchTerm('');
   };
 
@@ -388,30 +391,33 @@ export const OrdersView = () => {
     return 'em_andamento';
   };
   const filteredOrders = orders.filter(order => {
-    if (filterType !== 'Todos') {
+    if (filterTypes.length > 0) {
       const typeStr = norm(order.tipo_servico);
-      const fTypeStr = norm(filterType);
-      if (!typeStr.includes(fTypeStr)) return false;
+      const matched = filterTypes.some(f => typeStr.includes(norm(f)));
+      if (!matched) return false;
     }
     
-    if (filterStatus !== 'Todos') {
+    if (filterStatuses.length > 0) {
       const status = getStatus(order);
-      if (status !== filterStatus) return false;
+      const matched = filterStatuses.some(f => status === f);
+      if (!matched) return false;
     }
     
-    if (filterContract !== 'Todos') {
+    if (filterContracts.length > 0) {
       const contractStr = norm(order.contrato);
-      const fContractStr = norm(filterContract);
-      if (contractStr !== fContractStr) return false;
+      const matched = filterContracts.some(f => contractStr === norm(f));
+      if (!matched) return false;
     }
     
     if (searchTerm) {
       const search = norm(searchTerm);
       const searchString = norm([
         order.ordem_servico,
-        order.tarefa,
+        order.unidade,
         order.unidade_prisional_setor,
-        order.equipamentos?.map(e => `${e.equipamento} ${e.numero_serie} ${e.modelo}`).join(' ')
+        order.tarefa,
+        order.tratativa,
+        order.equipamentos?.map(e => `${e.unidade} ${e.numero_serie} ${e.tarefa} ${e.tratativa}`).join(' ')
       ].filter(Boolean).join(' '));
       if (!searchString.includes(search)) return false;
     }
@@ -483,37 +489,8 @@ export const OrdersView = () => {
         </div>
 
         {showFilters && (
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap gap-4">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px]"
-            >
-              <option value="Todos">Tipo (Todos)</option>
-              <option value="Preventiva">Preventiva</option>
-              <option value="Corretiva">Corretiva</option>
-              <option value="Vistoria">Vistoria</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px]"
-            >
-              <option value="Todos">Status (Todos)</option>
-              <option value="concluido">CONCLUÍDO</option>
-              <option value="pendente">PENDENTE</option>
-              <option value="aguardando_manutencao">AGUARDANDO</option>
-              <option value="em_andamento">Em Andamento (S/ Status)</option>
-            </select>
-            <select
-              value={filterContract}
-              onChange={(e) => setFilterContract(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[200px]"
-            >
-              <option value="Todos">Contrato (Todos)</option>
-              <option value="N° 002/2024 - VMI">N° 002/2024 - VMI</option>
-              <option value="N° 056/2026 - TECHSCAN">N° 056/2026 - TECHSCAN</option>
-            </select>
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap gap-4 items-center">
+            {/* Busca à esquerda com flex-1 para empurrar os filtros para a direita */}
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -523,25 +500,82 @@ export const OrdersView = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar OS, equipamento, unidade..."
-                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200"
+                  placeholder="Busca Avançada (Unidade, NS, OS, Tarefa, Tratativa)"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800 dark:text-slate-200 shadow-sm"
                 />
               </div>
             </div>
-            {(filterType !== 'Todos' || filterStatus !== 'Todos' || filterContract !== 'Todos' || searchTerm !== '') && (
-              <button
-                onClick={() => {
-                  setFilterType('Todos');
-                  setFilterStatus('Todos');
-                  setFilterContract('Todos');
-                  setSearchTerm('');
-                }}
-                className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
-                title="Limpar Filtros"
-              >
-                <Icons.X size={16} /> Limpar Filtros
-              </button>
-            )}
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Tipos */}
+              <div className="relative" tabIndex={0} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsTypesOpen(false); }}>
+                <button onClick={() => setIsTypesOpen(!isTypesOpen)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[140px] flex justify-between items-center gap-2 cursor-pointer shadow-sm">
+                  <span className="truncate max-w-[130px]">{filterTypes.length > 0 ? `${filterTypes.length} Tipo(s)` : 'Tipo (Todos)'}</span>
+                  <Icons.ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                </button>
+                {isTypesOpen && (
+                  <div className="absolute top-full mt-1 left-0 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
+                    {['Preventiva', 'Corretiva', 'Vistoria'].map((opt, i) => (
+                      <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white" checked={filterTypes.includes(opt)} onChange={(e) => { if (e.target.checked) setFilterTypes([...filterTypes, opt]); else setFilterTypes(filterTypes.filter(item => item !== opt)); }} />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Status */}
+              <div className="relative" tabIndex={0} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsStatusesOpen(false); }}>
+                <button onClick={() => setIsStatusesOpen(!isStatusesOpen)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[140px] flex justify-between items-center gap-2 cursor-pointer shadow-sm">
+                  <span className="truncate max-w-[130px]">{filterStatuses.length > 0 ? `${filterStatuses.length} Status` : 'Status (Todos)'}</span>
+                  <Icons.ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                </button>
+                {isStatusesOpen && (
+                  <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
+                    {[
+                      { val: 'concluido', label: 'CONCLUÍDO' },
+                      { val: 'pendente', label: 'PENDENTE' },
+                      { val: 'aguardando_manutencao', label: 'AGUARDANDO' },
+                      { val: 'em_andamento', label: 'Em Andamento (S/ Status)' }
+                    ].map((opt, i) => (
+                      <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white" checked={filterStatuses.includes(opt.val)} onChange={(e) => { if (e.target.checked) setFilterStatuses([...filterStatuses, opt.val]); else setFilterStatuses(filterStatuses.filter(item => item !== opt.val)); }} />
+                        <span>{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Contratos */}
+              <div className="relative" tabIndex={0} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsContractsOpen(false); }}>
+                <button onClick={() => setIsContractsOpen(!isContractsOpen)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[140px] flex justify-between items-center gap-2 cursor-pointer shadow-sm">
+                  <span className="truncate max-w-[130px]">{filterContracts.length > 0 ? `${filterContracts.length} Contrato(s)` : 'Contrato (Todos)'}</span>
+                  <Icons.ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                </button>
+                {isContractsOpen && (
+                  <div className="absolute top-full mt-1 right-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto">
+                    {[...new Set(orders.map(o => o.contrato).filter(Boolean))].sort().map((opt, i) => (
+                      <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white" checked={filterContracts.includes(opt)} onChange={(e) => { if (e.target.checked) setFilterContracts([...filterContracts, opt]); else setFilterContracts(filterContracts.filter(item => item !== opt)); }} />
+                        <span className="truncate" title={opt}>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {(filterTypes.length > 0 || filterStatuses.length > 0 || filterContracts.length > 0 || searchTerm !== '') && (
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
+                  title="Limpar Filtros"
+                >
+                  <Icons.X size={16} />
+                </button>
+              )}
+            </div>
           </div>
         )}
         <div className="overflow-x-auto">

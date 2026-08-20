@@ -241,7 +241,7 @@ export const EquipmentsView = () => {
     printWindow.document.close();
   };
 
-  const filteredEquipments = equipamentos.filter(eq => {
+  const matchOtherFilters = (eq) => {
     const matchType = filterTypes.length === 0 || filterTypes.includes(eq.categoria);
     
     let matchContract = filterContracts.length === 0;
@@ -274,13 +274,16 @@ export const EquipmentsView = () => {
       (eq.unidade || '').toLowerCase().includes(searchLower) ||
       (eq.localidade || '').toLowerCase().includes(searchLower) ||
       (eq.ordem_servico || '').toLowerCase().includes(searchLower);
-    
-    const matchModelo = filterModelos.length === 0 || filterModelos.includes(eq.modelo);
 
-    return matchType && matchContract && matchStatus && matchSearch && matchModelo;
+    return matchType && matchContract && matchStatus && matchSearch;
+  };
+
+  const filteredEquipments = equipamentos.filter(eq => {
+    const matchModelo = filterModelos.length === 0 || filterModelos.includes(eq.modelo);
+    return matchOtherFilters(eq) && matchModelo;
   });
 
-  const modelos = [...new Set(equipamentos.map(eq => eq.modelo).filter(Boolean))].sort();
+  const modelos = [...new Set(equipamentos.filter(matchOtherFilters).map(eq => eq.modelo).filter(Boolean))].sort();
   const unidades = [...new Set(equipamentos.map(eq => eq.unidade).filter(Boolean))].sort();
   const coberturas = [...new Set(equipamentos.map(eq => eq.cobertura_contrato).filter(Boolean))].sort();
 
@@ -458,7 +461,7 @@ export const EquipmentsView = () => {
                 className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[150px] flex justify-between items-center gap-2 cursor-pointer"
               >
                 <span className="truncate max-w-[150px]">
-                  {filterContracts.length > 0 ? `${filterContracts.length} Contrato(s)` : 'Contratos'}
+                  {filterContracts.length > 0 ? `${filterContracts.length} Cobertura(s)` : 'Cobertura de Contrato'}
                 </span>
                 <Icons.ChevronDown className="w-4 h-4 flex-shrink-0" />
               </button>

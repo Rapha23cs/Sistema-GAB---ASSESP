@@ -15,6 +15,8 @@ export const ColaboracaoView = () => {
   const [priority, setPriority] = useState('baixa');
   const [isLoading, setIsLoading] = useState(true);
   const [highlightedTaskId, setHighlightedTaskId] = useState(null);
+  const [expandedComments, setExpandedComments] = useState({});
+  const [commentInputs, setCommentInputs] = useState({});
 
   // Busca usuários para popular o painel lateral e o dropdown de atribuição
   const fetchUsers = async () => {
@@ -152,6 +154,47 @@ export const ColaboracaoView = () => {
 
   const myPendingTasks = tasks.filter(t => !t.completed && t.assignee === (user?.nome || ''));
 
+  const submitComment = async (task) => {
+    const text = commentInputs[task.id];
+    if (!text || !text.trim()) return;
+
+    const newComment = {
+      texto: text,
+      autor: user?.nome || 'Usuário Desconhecido',
+      data: formatDateBr(new Date())
+    };
+
+    // Optimistic UI update
+    setTasks(prev => prev.map(t => {
+      if (t.id === task.id) {
+        return { ...t, comentarios: [...(t.comentarios || []), { ...newComment, id: 'temp' }] };
+      }
+      return t;
+    }));
+    setCommentInputs(prev => ({ ...prev, [task.id]: '' }));
+
+    try {
+      await apiFetch(`${API_URL}/api/tarefas/${task.rowNumber}/comentarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newComment)
+      });
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao adicionar comentário');
+      fetchTasks();
+    }
+  };
+
+  const toggleComments = (taskId) => {
+    setExpandedComments(prev => ({ ...prev, [taskId]: !prev[taskId] }));
+  };
+
+  const handleCommentChange = (taskId, text) => {
+    setCommentInputs(prev => ({ ...prev, [taskId]: text }));
+  };
+
   return (
     <div className="space-y-6 flex h-[calc(100vh-140px)] gap-6">
       
@@ -167,13 +210,18 @@ export const ColaboracaoView = () => {
         {/* Input Form */}
         <form onSubmit={handleAddTask} className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 transition-colors duration-500">
           <div className="flex flex-col gap-3">
-            <input 
-              type="text" 
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              placeholder="Descreva a tarefa..."
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
+                Nova Tarefa ou Aviso
+              </label>
+              <textarea 
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Descreva a tarefa ou mensagem com detalhes..."
+                rows={3}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm resize-none"
+              />
+            </div>
             
             <div className="flex gap-3 items-center justify-between">
               <div className="flex gap-3 flex-1">
@@ -289,6 +337,16 @@ export const ColaboracaoView = () => {
                         </span>
                       )}
 
+                      {task.rowNumber !== -1 && (
+                        <button
+                          onClick={() => toggleComments(task.id)}
+                          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <Icons.MessageSquare className="w-4 h-4" />
+                          {task.comentarios?.length || 0} {(task.comentarios?.length === 1) ? 'Comentário' : 'Comentários'}
+                        </button>
+                      )}
+
                       {user?.nome === task.author && (
                         <button
                           onClick={() => handleDeleteTask(task)}
@@ -300,6 +358,46 @@ export const ColaboracaoView = () => {
                         </button>
                       )}
                     </div>
+                    
+                    {/* Comments Section */}
+                    {expandedComments[task.id] && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
+                        {/* List of comments */}
+                        <div className="space-y-3">
+                          {(task.comentarios || []).map((c, i) => (
+                            <div key={c.id || i} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 text-sm">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="font-bold text-slate-700 dark:text-slate-300">{c.autor}</span>
+                                <span className="text-xs text-slate-400">{c.data}</span>
+                              </div>
+                              <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{c.texto}</p>
+                            </div>
+                          ))}
+                          {(!task.comentarios || task.comentarios.length === 0) && (
+                            <p className="text-sm text-slate-500 text-center italic">Nenhum comentário ainda.</p>
+                          )}
+                        </div>
+                        
+                        {/* Add comment form */}
+                        <div className="flex gap-2 items-start mt-2">
+                          <textarea
+                            rows={1}
+                            placeholder={task.completed ? "Tarefa concluída (comentários desativados)" : "Escreva uma atualização ou justificativa..."}
+                            value={commentInputs[task.id] || ''}
+                            onChange={(e) => handleCommentChange(task.id, e.target.value)}
+                            disabled={task.completed}
+                            className={`flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none min-h-[40px] ${task.completed ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800' : ''}`}
+                          />
+                          <button
+                            onClick={() => submitComment(task)}
+                            disabled={task.completed || !commentInputs[task.id]?.trim()}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center shrink-0 min-h-[40px]"
+                          >
+                            <Icons.Send className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

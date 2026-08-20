@@ -95,6 +95,28 @@ export const NotificationBell = ({ setActiveTab }) => {
               tab: 'Colaboração'
             });
           }
+
+          let newCommentsCount = 0;
+          tarefas.forEach(t => {
+            if (!t.completed && t.comentarios && t.comentarios.length > 0) {
+              const lastComment = t.comentarios[t.comentarios.length - 1];
+              if (lastComment.autor !== user.nome && (t.author === user.nome || t.assignee === user.nome)) {
+                newCommentsCount++;
+              }
+            }
+          });
+          
+          if (newCommentsCount > 0) {
+            newAlerts.push({
+              id: 'tar_comments',
+              title: 'Novos Comentários nas Tarefas',
+              desc: `Há ${newCommentsCount} tarefa(s) com novos comentários.`,
+              icon: Icons.MessageSquare,
+              color: 'text-blue-500',
+              bg: 'bg-blue-50 dark:bg-blue-900/30',
+              tab: 'Colaboração'
+            });
+          }
         }
         
         if (Array.isArray(financ)) {

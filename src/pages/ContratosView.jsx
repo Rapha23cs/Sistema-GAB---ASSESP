@@ -237,8 +237,8 @@ export const ContratosView = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Buscar por número, objeto ou processo..."
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-72 h-10 transition-all focus:w-80"
+                placeholder="Busca Avançada (Contrato, Objeto e Processo Mãe)"
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-[350px] h-10 transition-all focus:w-[450px]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
