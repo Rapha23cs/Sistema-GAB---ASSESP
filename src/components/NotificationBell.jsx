@@ -197,6 +197,19 @@ export const NotificationBell = ({ setActiveTab }) => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleAlertsUpdated = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`dismissedAlerts_${user?.nome || 'default'}`)) || [];
+        setDismissedAlerts(stored);
+      } catch (e) {
+        console.error('Error parsing dismissedAlerts', e);
+      }
+    };
+    window.addEventListener('alertsUpdated', handleAlertsUpdated);
+    return () => window.removeEventListener('alertsUpdated', handleAlertsUpdated);
+  }, [user]);
+
   return (
     <div className="relative">
       <button 
@@ -255,6 +268,7 @@ export const NotificationBell = ({ setActiveTab }) => {
                         const updated = [...dismissedAlerts, alert.id];
                         setDismissedAlerts(updated);
                         localStorage.setItem(`dismissedAlerts_${user?.nome || 'default'}`, JSON.stringify(updated));
+                        window.dispatchEvent(new Event('alertsUpdated'));
                       }}
                       className="absolute top-4 right-4 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-900/30"
                       title="Dispensar notificação"

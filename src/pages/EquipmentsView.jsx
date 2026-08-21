@@ -7,6 +7,7 @@ import { EquipmentModal } from '../components/modals/EquipmentModal';
 import { DUMMY_EQUIPMENTS, DUMMY_CONTRACTS, DUMMY_ORDERS } from '../data/mockData';
 import toast from 'react-hot-toast';
 import { formatDateTimeBr, daysUntil } from '../utils/dateUtils';
+import logoImg from '../assets/logo.png';
 
 export const EquipmentsView = () => {
   const [filterTypes, setFilterTypes] = useState([]);
@@ -168,8 +169,20 @@ export const EquipmentsView = () => {
           <title>Relatório de Equipamentos - ${dateStr}</title>
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #334155; }
-            h1 { text-align: center; color: #0f172a; font-size: 22px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-            p.subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
+            .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px; }
+            .logo-mask {
+              width: 45px;
+              height: 45px;
+              background-color: #0f172a;
+              -webkit-mask-size: contain;
+              -webkit-mask-repeat: no-repeat;
+              -webkit-mask-position: center;
+              mask-size: contain;
+              mask-repeat: no-repeat;
+              mask-position: center;
+            }
+            h1 { text-align: center; color: #0f172a; font-size: 22px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+            p.subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; margin-top: 5px; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
             th { background-color: #f8fafc; color: #475569; font-weight: 700; padding: 12px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
             td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
@@ -186,7 +199,10 @@ export const EquipmentsView = () => {
           </style>
         </head>
         <body>
-          <h1>Relatório de Inventário de Equipamentos</h1>
+          <div class="header-container">
+            <div class="logo-mask" style="-webkit-mask-image: url('${logoImg.startsWith('data:') ? logoImg : window.location.origin + logoImg}'); mask-image: url('${logoImg.startsWith('data:') ? logoImg : window.location.origin + logoImg}');"></div>
+            <h1>Relatório de Inventário de Equipamentos</h1>
+          </div>
           <p class="subtitle">Gerado em: ${dateStr} &bull; Total listado: ${filteredEquipments.length} equipamentos</p>
           <table>
             <thead>

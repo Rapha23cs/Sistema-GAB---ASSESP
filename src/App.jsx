@@ -17,6 +17,7 @@ import { NotificationBell } from './components/NotificationBell';
 import { SettingsView } from './pages/SettingsView';
 import { useAuth } from './contexts/AuthContext';
 import { useTheme } from './contexts/ThemeContext';
+import logoImg from './assets/logo.png';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -110,11 +111,11 @@ export default function App() {
         <aside className="w-72 bg-white dark:bg-gab-darker border-r border-slate-200 dark:border-white/5 flex flex-col transition-colors duration-500 z-20 shadow-sm">
           <div className="p-6 flex items-center gap-3">
             <div className="w-10 h-10 text-gab-gold flex items-center justify-center shrink-0">
-              <Icons.GabLogo className="w-10 h-10 drop-shadow-sm" />
+              <img src={logoImg} alt="Logo SGC" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
             <div className="flex flex-col justify-center">
               <span className="text-lg font-serif font-bold tracking-widest leading-none mb-1 text-gab-dark dark:text-white">
-                GAB — ASSESP
+                SGC — ASSESP
               </span>
               <span className="text-[9px] font-bold tracking-[0.15em] leading-none text-gab-gold">
                 SETOR JURÍDICO | PPMA

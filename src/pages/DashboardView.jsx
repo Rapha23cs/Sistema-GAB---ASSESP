@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import toast from 'react-hot-toast';
 import { getTimestamp, daysUntil, formatDateTimeBr } from '../utils/dateUtils';
+import logoImg from '../assets/logo.png';
+
 
 const norm = str => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
@@ -65,6 +67,13 @@ export const DashboardView = ({ setActiveTab }) => {
   const [licitacoes, setLicitacoes] = useState([]);
   const [financeiro, setFinanceiro] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dismissedAvisos, setDismissedAvisos] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`dismissedAlerts_${user?.nome || 'default'}`)) || [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     Promise.all([
@@ -112,13 +121,26 @@ export const DashboardView = ({ setActiveTab }) => {
   }).filter(c => c.diasRestantes >= 0 && c.diasRestantes <= 90);
   const contratosAVencer = contratosVencendoList.length;
 
+  useEffect(() => {
+    const handleAlertsUpdated = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`dismissedAlerts_${user?.nome || 'default'}`)) || [];
+        setDismissedAvisos(stored);
+      } catch (e) {
+        console.error('Error parsing dismissedAlerts', e);
+      }
+    };
+    window.addEventListener('alertsUpdated', handleAlertsUpdated);
+    return () => window.removeEventListener('alertsUpdated', handleAlertsUpdated);
+  }, [user]);
+
   const eqAgAprovacao = equipamentos.filter(e => {
     const s = norm(e.status);
     return s.includes('aguardando aprovação') || s.includes('ag. aprovação');
   });
 
   const pendingTasks = tarefas.filter(t => 
-    (t.assignee === user?.nome || t.assignee === 'Todos') && !t.completed
+    (t.assignee === user?.nome || t.assignee === 'Todos') && !t.completed && !dismissedAvisos.includes(`aviso_${t.id || t.rowNumber}`)
   );
 
   const eqInoperantes = equipamentos.filter(e => {
@@ -290,8 +312,20 @@ export const DashboardView = ({ setActiveTab }) => {
           <title>Relatório Geral Operacional - ${dateStr}</title>
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #334155; }
-            h1 { text-align: center; color: #1e3a8a; font-size: 24px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-            p.subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
+            .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px; }
+            .logo-mask {
+              width: 45px;
+              height: 45px;
+              background-color: #1e3a8a;
+              -webkit-mask-size: contain;
+              -webkit-mask-repeat: no-repeat;
+              -webkit-mask-position: center;
+              mask-size: contain;
+              mask-repeat: no-repeat;
+              mask-position: center;
+            }
+            h1 { text-align: center; color: #1e3a8a; font-size: 24px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+            p.subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; margin-top: 5px; }
             
             .stats-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
             .stat-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; flex: 1; min-width: 120px; }
@@ -319,7 +353,10 @@ export const DashboardView = ({ setActiveTab }) => {
           </style>
         </head>
         <body>
-          <h1>Relatório Geral Operacional</h1>
+          <div class="header-container">
+            <div class="logo-mask" style="-webkit-mask-image: url('${logoImg.startsWith('data:') ? logoImg : window.location.origin + logoImg}'); mask-image: url('${logoImg.startsWith('data:') ? logoImg : window.location.origin + logoImg}');"></div>
+            <h1>Relatório Geral Operacional</h1>
+          </div>
           <p class="subtitle">Gerado em: ${dateStr}</p>
           
           <div class="stats-grid">
@@ -481,7 +518,7 @@ export const DashboardView = ({ setActiveTab }) => {
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao Sistema GAB - ASSESP | PPMA, {user?.nome?.split(' ')[0] || 'Usuário'}!</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao SGC - ASSESP | PPMA, {user?.nome?.split(' ')[0] || 'Usuário'}!</h2>
             <p className="text-blue-100 dark:text-blue-200 text-sm max-w-2xl">
               Aqui está o resumo operacional das suas unidades hoje. Você tem <strong className="text-white font-semibold">{osEmAndamento} Ordens de Serviço</strong> em andamento e <strong className="text-amber-300 font-semibold">{contratosAVencer} Contrato{contratosAVencer !== 1 ? 's' : ''}</strong> vencendo nos próximos 90 dias.
             </p>

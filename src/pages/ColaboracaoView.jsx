@@ -18,6 +18,21 @@ export const ColaboracaoView = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [userFilter, setUserFilter] = useState(null);
+  const [dismissedAvisos, setDismissedAvisos] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`dismissedAlerts_${user?.nome || 'default'}`)) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  const dismissAviso = (taskId) => {
+    const alertId = `aviso_${taskId}`;
+    const updated = [...dismissedAvisos, alertId];
+    setDismissedAvisos(updated);
+    localStorage.setItem(`dismissedAlerts_${user?.nome || 'default'}`, JSON.stringify(updated));
+    window.dispatchEvent(new Event('alertsUpdated'));
+  };
 
   // Busca usuários para popular o painel lateral e o dropdown de atribuição
   const fetchUsers = async () => {
@@ -79,6 +94,19 @@ export const ColaboracaoView = () => {
       window.removeEventListener('searchTaskUpdated', handleSearchTask);
     };
   }, [isLoading, tasks]);
+
+  useEffect(() => {
+    const handleAlertsUpdated = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`dismissedAlerts_${user?.nome || 'default'}`)) || [];
+        setDismissedAvisos(stored);
+      } catch (e) {
+        console.error('Error parsing dismissedAlerts', e);
+      }
+    };
+    window.addEventListener('alertsUpdated', handleAlertsUpdated);
+    return () => window.removeEventListener('alertsUpdated', handleAlertsUpdated);
+  }, [user]);
 
   const toggleTask = async (task) => {
     try {
@@ -324,9 +352,18 @@ export const ColaboracaoView = () => {
                     {/* Actions / Status */}
                     <div className="mt-4 flex items-center gap-4">
                       {task.assignee === 'Todos' ? (
-                        <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50">
-                           <Icons.MessageSquare /> Aviso
-                        </div>
+                        dismissedAvisos.includes(`aviso_${task.id || task.rowNumber}`) ? (
+                          <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 opacity-70">
+                             <Icons.CheckSquare /> Ciente
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => dismissAviso(task.id || task.rowNumber)}
+                            className="flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 shadow-sm"
+                          >
+                            <Icons.Square /> Marcar como Ciente
+                          </button>
+                        )
                       ) : (
                         user?.nome === task.assignee ? (
                           <button 
@@ -441,6 +478,23 @@ export const ColaboracaoView = () => {
             )}
           </h3>
           <div className="space-y-2">
+            <div 
+              onClick={() => setUserFilter(userFilter === 'Todos' ? null : 'Todos')}
+              className={`flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition-colors ${userFilter === 'Todos' ? 'bg-emerald-50 dark:bg-emerald-900/30 ring-1 ring-emerald-500/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+            >
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <Icons.MessageSquare size={16} />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">Avisos Gerais</span>
+                <span className="text-[10px] text-slate-400 uppercase">Ver todos os anúncios</span>
+              </div>
+            </div>
+            
+            <div className="my-2 border-t border-slate-100 dark:border-slate-800"></div>
+
             {activeUsers.map((u) => (
               <div 
                 key={u.id} 
