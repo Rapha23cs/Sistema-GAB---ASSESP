@@ -85,13 +85,13 @@ export const LicitacoesView = () => {
     try {
       const method = editingId ? 'PUT' : 'POST';
       const url = editingId ? `${API_URL}/api/licitacoes/${editingId}` : `${API_URL}/api/licitacoes`;
-      
+
       const res = await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
+
       if (!res.ok) throw new Error('Erro ao salvar');
       setIsModalOpen(false);
       fetchData();
@@ -105,7 +105,7 @@ export const LicitacoesView = () => {
     try {
       const res = await apiFetch(`${API_URL}/api/licitacoes/${id}`, { method: 'DELETE' });
       if (res.ok) fetchData();
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
   };
@@ -113,14 +113,14 @@ export const LicitacoesView = () => {
   // Filtros
   const filteredData = licitacoes.filter(item => {
     const matchSearch = (item.processo_original || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (item.objeto || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (item.stargov || '').toLowerCase().includes(searchTerm.toLowerCase());
-                        
-    const matchModalidade = modalidadeFilter === 'Todas' || 
-                            (item.modalidade || '').toUpperCase().includes(modalidadeFilter.toUpperCase());
+      (item.objeto || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.stargov || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchModalidade = modalidadeFilter === 'Todas' ||
+      (item.modalidade || '').toUpperCase().includes(modalidadeFilter.toUpperCase());
 
     const matchTipoObjeto = tipoObjetoFilter === 'Todos' ||
-                            (item.tipo_objeto || '').toUpperCase() === tipoObjetoFilter.toUpperCase();
+      (item.tipo_objeto || '').toUpperCase() === tipoObjetoFilter.toUpperCase();
 
     return matchSearch && matchModalidade && matchTipoObjeto;
   });
@@ -159,13 +159,13 @@ export const LicitacoesView = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row xl:justify-between items-start xl:items-center gap-4 bg-white dark:bg-slate-900 transition-colors duration-500">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row xl:justify-between items-start xl:items-center gap-4 bg-white dark:bg-slate-900 transition-colors duration-500 rounded-t-2xl">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 whitespace-nowrap">
             <Icons.Landmark /> Processos Licitatórios
           </h2>
           <div className="flex flex-wrap gap-3 items-center w-full xl:w-auto">
-            
+
             {/* Status Filter Cards */}
             <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-inner h-10">
               <button
@@ -189,11 +189,11 @@ export const LicitacoesView = () => {
             </div>
 
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
               <input
                 type="text"
                 placeholder="Buscar processo, objeto, stargov..."
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-64 md:w-72 h-10 transition-all focus:w-80"
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full h-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -225,7 +225,7 @@ export const LicitacoesView = () => {
             >
               <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
             </button>
-            
+
             <button
               onClick={openNewModal}
               className="px-4 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
@@ -258,7 +258,7 @@ export const LicitacoesView = () => {
                   <React.Fragment key={item.id || idx}>
                     <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                       <td className="px-6 py-4">
-                        <button 
+                        <button
                           onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
                           className="text-slate-400 hover:text-blue-500 transition-colors"
                         >
@@ -312,9 +312,9 @@ export const LicitacoesView = () => {
                                 <p className="text-sm text-slate-700 dark:text-slate-300">{item.memo || '-'}</p>
                               </div>
                             </div>
-                            
+
                             <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
-                            
+
                             <div className="flex flex-col gap-4 flex-1 text-center md:text-left">
                               <div>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Custeio/Recurso</p>
@@ -325,9 +325,9 @@ export const LicitacoesView = () => {
                                 <p className="text-sm text-slate-700 dark:text-slate-300">{item.quantidade || '-'}</p>
                               </div>
                             </div>
-                            
+
                             <div className="w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
-                            
+
                             <div className="flex flex-col gap-4 flex-1 text-center md:text-left">
                               <div>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Localização</p>

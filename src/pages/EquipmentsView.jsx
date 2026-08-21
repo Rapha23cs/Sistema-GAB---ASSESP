@@ -26,6 +26,23 @@ export const EquipmentsView = () => {
   const [expandedRow, setExpandedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contratosDb, setContratosDb] = useState([]);
+  
+  const [activeKpiCard, setActiveKpiCard] = useState(null);
+  const kpiContainerRef = React.useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (activeKpiCard && kpiContainerRef.current && !kpiContainerRef.current.contains(e.target)) {
+        // Ignora cliques em modais, toasts ou overlays globais se necessário
+        if (e.target.closest('[role="dialog"]') || e.target.closest('.toast-container') || e.target.closest('.ignore-outside-click')) return;
+        
+        setActiveKpiCard(null);
+        setFilterStatuses([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [activeKpiCard]);
 
   const fetchData = () => {
     setIsLoading(true);
@@ -191,10 +208,19 @@ export const EquipmentsView = () => {
             .status-pendencia { color: #d97706; font-weight: bold; background: #fef3c7; padding: 3px 8px; border-radius: 4px; display: inline-block; }
             .status-inoperante { color: #e11d48; font-weight: bold; background: #ffe4e6; padding: 3px 8px; border-radius: 4px; display: inline-block; }
             
+            .kpi-container { display: flex; gap: 15px; margin-bottom: 20px; justify-content: space-between; }
+            .kpi-card { flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background-color: #f8fafc; }
+            .kpi-card .kpi-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+            .kpi-card .kpi-value { font-size: 20px; font-weight: 700; color: #0f172a; }
+            .kpi-val-operante { color: #059669 !important; }
+            .kpi-val-pendencia { color: #d97706 !important; }
+            .kpi-val-inoperante { color: #e11d48 !important; }
+            
             @media print {
               @page { margin: 1cm; size: landscape; }
               body { padding: 0; }
               table { box-shadow: none; border: 1px solid #e2e8f0; }
+              .kpi-container { gap: 10px; }
             }
           </style>
         </head>
@@ -204,6 +230,26 @@ export const EquipmentsView = () => {
             <h1>Relatório de Inventário de Equipamentos</h1>
           </div>
           <p class="subtitle">Gerado em: ${dateStr} &bull; Total listado: ${filteredEquipments.length} equipamentos</p>
+          
+          <div class="kpi-container">
+            <div class="kpi-card">
+              <div class="kpi-label">Total de Equipamentos</div>
+              <div class="kpi-value">${totalEquipments}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Operantes</div>
+              <div class="kpi-value kpi-val-operante">${operantes}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">${kpi3Label}</div>
+              <div class="kpi-value kpi-val-pendencia">${kpi3Value}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">${kpi4Label}</div>
+              <div class="kpi-value kpi-val-inoperante">${kpi4Value}</div>
+            </div>
+          </div>
+
           <table>
             <thead>
               <tr>
@@ -278,6 +324,8 @@ export const EquipmentsView = () => {
         if (fs === 'Operante') return statusVal.includes('funcionando') || statusVal === 'operante';
         if (fs === 'Operante com Pendência') return (statusVal.includes('análise') || statusVal.includes('analise') || statusVal.includes('avaliação') || statusVal.includes('pendência') || statusVal.includes('pendencia') || statusVal.includes('manutenção') || statusVal.includes('manutencao')) && !statusVal.includes('laboratorial');
         if (fs === 'Inoperante') return statusVal.includes('inoperante') || statusVal.includes('condenado') || statusVal.includes('laboratorial');
+        if (fs === 'Condenados') return statusVal.includes('condenado');
+        if (fs === 'Inoperantes/Laboratorial') return statusVal.includes('inoperante') || statusVal.includes('laboratorial');
         return false;
       });
     }
@@ -291,15 +339,22 @@ export const EquipmentsView = () => {
       (eq.localidade || '').toLowerCase().includes(searchLower) ||
       (eq.ordem_servico || '').toLowerCase().includes(searchLower);
 
-    return matchType && matchContract && matchStatus && matchSearch;
+    return { matchType, matchContract, matchStatus, matchSearch };
   };
 
   const filteredEquipments = equipamentos.filter(eq => {
+    const { matchType, matchContract, matchStatus, matchSearch } = matchOtherFilters(eq);
     const matchModelo = filterModelos.length === 0 || filterModelos.includes(eq.modelo);
-    return matchOtherFilters(eq) && matchModelo;
+    return matchType && matchContract && matchStatus && matchSearch && matchModelo;
   });
 
-  const modelos = [...new Set(equipamentos.filter(matchOtherFilters).map(eq => eq.modelo).filter(Boolean))].sort();
+  const baseEquipmentsForKPIs = equipamentos.filter(eq => {
+    const { matchType, matchContract, matchSearch } = matchOtherFilters(eq);
+    const matchModelo = filterModelos.length === 0 || filterModelos.includes(eq.modelo);
+    return matchType && matchContract && matchSearch && matchModelo;
+  });
+
+  const modelos = [...new Set(baseEquipmentsForKPIs.map(eq => eq.modelo).filter(Boolean))].sort();
   const unidades = [...new Set(equipamentos.map(eq => eq.unidade).filter(Boolean))].sort();
   const coberturas = [...new Set(equipamentos.map(eq => eq.cobertura_contrato).filter(Boolean))].sort();
 
@@ -311,27 +366,27 @@ export const EquipmentsView = () => {
   // KPIs
   const isPorticosOnly = filterTypes.length === 1 && filterTypes[0] === 'Pórticos';
 
-  const totalEquipments = filteredEquipments.length;
-  const operantes = filteredEquipments.filter(e => {
+  const totalEquipments = baseEquipmentsForKPIs.length;
+  const operantes = baseEquipmentsForKPIs.filter(e => {
     const status = (e.status || '').toLowerCase();
     return status.includes('funcionando') || status === 'operante';
   }).length;
   
   const kpi3Label = isPorticosOnly ? 'Condenados' : 'Operante com Pendência';
   const kpi3Value = isPorticosOnly
-    ? filteredEquipments.filter(e => (e.status || '').toLowerCase().includes('condenado')).length
-    : filteredEquipments.filter(e => {
+    ? baseEquipmentsForKPIs.filter(e => (e.status || '').toLowerCase().includes('condenado')).length
+    : baseEquipmentsForKPIs.filter(e => {
         const status = (e.status || '').toLowerCase();
         return (status.includes('análise') || status.includes('analise') || status.includes('avaliação') || status.includes('pendência') || status.includes('pendencia') || status.includes('manutenção') || status.includes('manutencao')) && !status.includes('laboratorial');
       }).length;
       
-  const kpi4Label = 'Inoperantes';
+  const kpi4Label = isPorticosOnly ? 'Inoperantes/Laboratorial' : 'Inoperantes';
   const kpi4Value = isPorticosOnly
-    ? filteredEquipments.filter(e => {
+    ? baseEquipmentsForKPIs.filter(e => {
         const s = (e.status || '').toLowerCase();
         return s.includes('inoperante') || s.includes('laboratorial');
       }).length
-    : filteredEquipments.filter(e => {
+    : baseEquipmentsForKPIs.filter(e => {
         const status = (e.status || '').toLowerCase();
         return status.includes('inoperante') || status.includes('condenado') || status.includes('laboratorial');
       }).length;
@@ -364,14 +419,31 @@ export const EquipmentsView = () => {
   return (
     <div className="space-y-8">
       {/* Metrics for Equipments */}
-      <div className="grid grid-cols-4 gap-6">
+      <div ref={kpiContainerRef} className="grid grid-cols-4 gap-6">
         {[
-          { label: 'Total de Equipamentos', value: totalEquipments, color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Operantes', value: operantes, color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: kpi3Label, value: kpi3Value, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: kpi4Label, value: kpi4Value, color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
+          { id: 'all', label: 'Total de Equipamentos', value: totalEquipments, color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
+          { id: 'Operante', label: 'Operantes', value: operantes, color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
+          { id: kpi3Label, label: kpi3Label, value: kpi3Value, color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
+          { id: kpi4Label, label: kpi4Label, value: kpi4Value, color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
         ].map((stat, i) => (
-          <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-default group`}>
+          <div 
+            key={i} 
+            onClick={() => {
+              if (stat.id === 'all') {
+                setActiveKpiCard(null);
+                setFilterStatuses([]);
+              } else {
+                if (activeKpiCard === stat.id) {
+                  setActiveKpiCard(null);
+                  setFilterStatuses([]);
+                } else {
+                  setActiveKpiCard(stat.id);
+                  setFilterStatuses([stat.id]);
+                }
+              }
+            }}
+            className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-all duration-300 cursor-pointer group ${activeKpiCard === stat.id ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}
+          >
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">{stat.label}</p>
             <p className={`text-4xl font-bold ${stat.text}`}>{stat.value}</p>
           </div>
@@ -383,7 +455,7 @@ export const EquipmentsView = () => {
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Icons.Monitor /> Inventário de Equipamentos
           </h2>
-          <div className="flex gap-3">
+          <div className="flex gap-3 ignore-outside-click">
             <button 
               onClick={fetchData}
               className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center gap-2 cursor-pointer"

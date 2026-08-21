@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
         const isGeral = sheetId === 's4';
         return {
           id: `${sheetId}_${row.rowNumber}`,
-          contrato: isGeral ? row.get('CONTRATO') : contratoParam,
+          contrato: row.get('CONTRATO') || contratoParam,
           objeto: row.get('OBJETO'), 
           sei: row.get('SEI'), 
           mes: isGeral ? '' : row.get('MÊS'),

@@ -20,6 +20,21 @@ export const OrdersView = () => {
   const [addingEquipmentToOS, setAddingEquipmentToOS] = useState(null);
   const [editingGlobalOS, setEditingGlobalOS] = useState(null);
 
+  const [activeKpiCard, setActiveKpiCard] = useState(null);
+  const kpiContainerRef = React.useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (activeKpiCard && kpiContainerRef.current && !kpiContainerRef.current.contains(e.target)) {
+        if (e.target.closest('[role="dialog"]') || e.target.closest('.toast-container') || e.target.closest('.ignore-outside-click')) return;
+        setActiveKpiCard(null);
+        setFilterStatuses([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [activeKpiCard]);
+
   // Filtros
   const [filterTypes, setFilterTypes] = useState([]);
   const [isTypesOpen, setIsTypesOpen] = useState(false);
@@ -430,9 +445,38 @@ export const OrdersView = () => {
     return true;
   });
 
-  const concluidas = filteredOrders.filter(o => getStatus(o) === 'concluido').length;
-  const pendentes = filteredOrders.filter(o => getStatus(o) === 'pendente_(tratativa)').length;
-  const aguardando = filteredOrders.filter(o => getStatus(o) === 'aguardando_(servico)').length;
+  const baseOrdersForKPIs = orders.filter(order => {
+    if (filterTypes.length > 0) {
+      const typeStr = norm(order.tipo_servico);
+      const matched = filterTypes.some(f => typeStr.includes(norm(f)));
+      if (!matched) return false;
+    }
+    
+    if (filterContracts.length > 0) {
+      const contractStr = norm(order.contrato);
+      const matched = filterContracts.some(f => contractStr === norm(f));
+      if (!matched) return false;
+    }
+    
+    if (searchTerm) {
+      const search = norm(searchTerm);
+      const searchString = norm([
+        order.ordem_servico,
+        order.unidade,
+        order.unidade_prisional_setor,
+        order.tarefa,
+        order.tratativa,
+        order.equipamentos?.map(e => `${e.unidade} ${e.numero_serie} ${e.tarefa} ${e.tratativa}`).join(' ')
+      ].filter(Boolean).join(' '));
+      if (!searchString.includes(search)) return false;
+    }
+    
+    return true;
+  });
+
+  const concluidas = baseOrdersForKPIs.filter(o => getStatus(o) === 'concluido').length;
+  const pendentes = baseOrdersForKPIs.filter(o => getStatus(o) === 'pendente_(tratativa)').length;
+  const aguardando = baseOrdersForKPIs.filter(o => getStatus(o) === 'aguardando_(servico)').length;
 
   return (
     <div className="space-y-8 relative">
@@ -451,14 +495,31 @@ export const OrdersView = () => {
         />
       )}
       {/* Metrics */}
-      <div className="grid grid-cols-4 gap-6">
+      <div ref={kpiContainerRef} className="grid grid-cols-4 gap-6">
         {[
-          { label: 'Total de OS', value: filteredOrders.length.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Concluídas', value: concluidas.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Pendentes', value: pendentes.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
-          { label: 'Aguardando', value: aguardando.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
+          { id: 'all', label: 'Total de OS', value: baseOrdersForKPIs.length.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-slate-800 dark:text-slate-100', border: 'border-slate-200 dark:border-slate-800' },
+          { id: 'concluido', label: 'Concluídas', value: concluidas.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-slate-200 dark:border-slate-800' },
+          { id: 'pendente_(tratativa)', label: 'Pendentes', value: pendentes.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-rose-600 dark:text-rose-400', border: 'border-slate-200 dark:border-slate-800' },
+          { id: 'aguardando_(servico)', label: 'Aguardando', value: aguardando.toString(), color: 'bg-white dark:bg-slate-900', text: 'text-amber-600 dark:text-amber-400', border: 'border-slate-200 dark:border-slate-800' },
         ].map((stat, i) => (
-          <div key={i} className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-default group`}>
+          <div 
+            key={i} 
+            onClick={() => {
+              if (stat.id === 'all') {
+                setActiveKpiCard(null);
+                setFilterStatuses([]);
+              } else {
+                if (activeKpiCard === stat.id) {
+                  setActiveKpiCard(null);
+                  setFilterStatuses([]);
+                } else {
+                  setActiveKpiCard(stat.id);
+                  setFilterStatuses([stat.id]);
+                }
+              }
+            }}
+            className={`p-6 rounded-2xl ${stat.color} border ${stat.border} shadow-sm hover:-translate-y-1 transition-all duration-300 cursor-pointer group ${activeKpiCard === stat.id ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}
+          >
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">{stat.label}</p>
             <p className={`text-4xl font-bold ${stat.text}`}>{stat.value}</p>
           </div>
@@ -470,8 +531,8 @@ export const OrdersView = () => {
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Icons.Briefcase /> Ordens Recentes
           </h2>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button
+          <div className="flex items-center gap-2 w-full md:w-auto ignore-outside-click">
+            <button 
               onClick={fetchData}
               className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center gap-2 cursor-pointer"
               title="Atualizar Dados"

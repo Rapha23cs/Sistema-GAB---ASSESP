@@ -171,8 +171,8 @@ export const FinanceiroView = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row xl:justify-between items-start xl:items-center gap-4 bg-white dark:bg-slate-900 transition-colors duration-500">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row xl:justify-between items-start xl:items-center gap-4 bg-white dark:bg-slate-900 transition-colors duration-500 rounded-t-2xl">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 whitespace-nowrap">
             <Icons.Landmark /> Controle Financeiro
           </h2>
@@ -234,11 +234,11 @@ export const FinanceiroView = () => {
               )}
             </div>
 
-            <div className="relative">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
               <input
                 type="text"
                 placeholder="Busca Avançada (Contrato, Objeto, SEI, NF, OB)"
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-72 md:w-96 h-10 transition-all focus:w-[400px]"
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full h-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -268,9 +268,9 @@ export const FinanceiroView = () => {
                 <th className="px-6 py-4 font-medium w-10"></th>
                 <th className="px-6 py-4 font-medium">Contrato</th>
                 <th className="px-6 py-4 font-medium">Objeto</th>
-                <th className="px-6 py-4 font-medium">Ordem Bancária / SEI</th>
-                <th className="px-6 py-4 font-medium">Valor NF</th>
-                <th className="px-6 py-4 font-medium">Status NF</th>
+                <th className="px-6 py-4 font-medium">Ordem Bancária</th>
+                <th className="px-6 py-4 font-medium">Valor OB</th>
+                <th className="px-6 py-4 font-medium">Status OB</th>
                 <th className="px-6 py-4 font-medium w-24">Ações</th>
               </tr>
             </thead>
@@ -294,6 +294,7 @@ export const FinanceiroView = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.contrato || '-'}</span>
+                          {item.sei && <span className="text-xs text-slate-500 dark:text-slate-400">SEI: {item.sei}</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-xs truncate" title={item.objeto}>
@@ -301,21 +302,20 @@ export const FinanceiroView = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">OB: {item.ordem_bancaria || '-'}</span>
-                          {item.sei && <span className="text-xs text-slate-500 dark:text-slate-400">SEI: {item.sei}</span>}
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.ordem_bancaria ? `OB: ${item.ordem_bancaria}` : '-'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">
-                        {item.valor_nf || '-'}
+                        {item.valor_ob || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(item.status_nf || '').toLowerCase().includes('pendente')
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(item.status_ob || '').toLowerCase().includes('pendente')
                           ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
-                          : (item.status_nf || '').toLowerCase().includes('autorizado')
+                          : (item.status_ob || '').toLowerCase().includes('pago')
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                             : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                           }`}>
-                          {item.status_nf || '-'}
+                          {item.status_ob || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -349,8 +349,8 @@ export const FinanceiroView = () => {
                             </div>
                             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
                             <div className="flex flex-col items-center flex-1">
-                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valor OB</p>
-                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.valor_ob || '-'}</p>
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valor NF</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.valor_nf || '-'}</p>
                             </div>
                             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
                             <div className="flex flex-col items-center flex-1">
@@ -359,14 +359,14 @@ export const FinanceiroView = () => {
                             </div>
                             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
                             <div className="flex flex-col items-center flex-1">
-                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status OB</p>
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(item.status_ob || '').toLowerCase().includes('pendente')
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status NF (RFC/RGC)</p>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(item.status_nf || '').toLowerCase().includes('pendente')
                                 ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
-                                : (item.status_ob || '').toLowerCase().includes('pago')
+                                : (item.status_nf || '').toLowerCase().includes('autorizado')
                                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                                   : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                                 }`}>
-                                {item.status_ob || '-'}
+                                {item.status_nf || '-'}
                               </span>
                             </div>
                           </div>

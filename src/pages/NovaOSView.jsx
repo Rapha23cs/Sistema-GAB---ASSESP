@@ -10,7 +10,7 @@ export const NovaOSView = ({ onCancel, onSave }) => {
     contrato: 'N° 056/2026 - TECHSCAN', // Initial value for Esteira
     processo: '',
     sei: '',
-    tipo_servico: 'Preventiva',
+    tipo_servico: 'MANUTENÇÃO PREVENTIVA',
     unidade: '', // we will replace this with unidades array
     unidades: [],
     data_assinatura: '',
@@ -171,9 +171,9 @@ export const NovaOSView = ({ onCancel, onSave }) => {
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo de Serviço</label>
               <select name="tipo_servico" value={formData.tipo_servico} onChange={handleChange} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200">
-                <option value="Preventiva">Preventiva</option>
-                <option value="Corretiva">Corretiva</option>
-                <option value="Vistoria">Vistoria</option>
+                <option value="MANUTENÇÃO PREVENTIVA">MANUTENÇÃO PREVENTIVA</option>
+                <option value="MANUTENÇÃO CORRETIVA">MANUTENÇÃO CORRETIVA</option>
+                <option value="VISTORIA">VISTORIA</option>
               </select>
             </div>
 

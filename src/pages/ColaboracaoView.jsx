@@ -26,12 +26,28 @@ export const ColaboracaoView = () => {
     }
   });
 
-  const dismissAviso = (taskId) => {
+  const dismissAviso = async (task) => {
+    const taskId = task.id || task.rowNumber;
     const alertId = `aviso_${taskId}`;
-    const updated = [...dismissedAvisos, alertId];
-    setDismissedAvisos(updated);
-    localStorage.setItem(`dismissedAlerts_${user?.nome || 'default'}`, JSON.stringify(updated));
-    window.dispatchEvent(new Event('alertsUpdated'));
+    if (!dismissedAvisos.includes(alertId)) {
+      const updated = [...dismissedAvisos, alertId];
+      setDismissedAvisos(updated);
+      localStorage.setItem(`dismissedAlerts_${user?.nome || 'default'}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event('alertsUpdated'));
+    }
+
+    if (task.rowNumber !== -1 && !task.comentarios?.some(c => c.isCiente && c.autor === user?.nome)) {
+      try {
+        await apiFetch(`${API_URL}/api/tarefas/${task.rowNumber}/comentarios`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isCiente: true, autor: user?.nome || 'Usuário', data: formatDateBr(new Date()) })
+        });
+        fetchTasks();
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   // Busca usuários para popular o painel lateral e o dropdown de atribuição
@@ -239,11 +255,20 @@ export const ColaboracaoView = () => {
       
       {/* Task Assignment Panel (Left) */}
       <div className="flex-[2] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col overflow-hidden transition-colors duration-500">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-500">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <Icons.MessageSquare /> Fórum e Tarefas (Atribuições)
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Delegue ações e comunique-se com os outros usuários do sistema.</p>
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-500 flex justify-between items-start gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Icons.MessageSquare /> Fórum e Tarefas (Atribuições)
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Delegue ações e comunique-se com os outros usuários do sistema.</p>
+          </div>
+          <button
+            onClick={fetchTasks}
+            className="px-4 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition-colors border border-slate-300 dark:border-slate-600 shadow-sm flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            title="Atualizar Dados"
+          >
+            <Icons.RefreshCw className={isLoading ? "animate-spin" : ""} />
+          </button>
         </div>
 
         {/* Input Form */}
@@ -351,20 +376,44 @@ export const ColaboracaoView = () => {
                     
                     {/* Actions / Status */}
                     <div className="mt-4 flex items-center gap-4">
-                      {task.assignee === 'Todos' ? (
-                        dismissedAvisos.includes(`aviso_${task.id || task.rowNumber}`) ? (
-                          <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 opacity-70">
-                             <Icons.CheckSquare /> Ciente
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => dismissAviso(task.id || task.rowNumber)}
-                            className="flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 shadow-sm"
-                          >
-                            <Icons.Square /> Marcar como Ciente
-                          </button>
-                        )
-                      ) : (
+                      {task.assignee === 'Todos' ? (() => {
+                        const isCiente = task.comentarios?.some(c => c.isCiente && c.autor === user?.nome) || dismissedAvisos.includes(`aviso_${task.id || task.rowNumber}`);
+                        const cientesList = (task.comentarios || []).filter(c => c.isCiente);
+                        return (
+                          <>
+                            {isCiente ? (
+                              <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 opacity-70">
+                                 <Icons.CheckSquare /> Ciente
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => dismissAviso(task)}
+                                className="flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 shadow-sm"
+                              >
+                                <Icons.Square /> Marcar como Ciente
+                              </button>
+                            )}
+                            
+                            {cientesList.length > 0 && (
+                              <div className="flex items-center gap-2 ml-2">
+                                <span className="text-xs text-slate-500 font-medium">Visto por:</span>
+                                <div className="flex -space-x-2 overflow-hidden" title={cientesList.map(c => c.autor).join(', ')}>
+                                  {cientesList.slice(0, 5).map((c, idx) => (
+                                    <div key={idx} className="inline-block h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 border border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300 relative z-10" style={{ zIndex: 10 - idx }}>
+                                      {c.autor.charAt(0).toUpperCase()}
+                                    </div>
+                                  ))}
+                                  {cientesList.length > 5 && (
+                                    <div className="inline-block h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 border border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-slate-500 relative z-0" style={{ zIndex: 0 }}>
+                                      +{cientesList.length - 5}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })() : (
                         user?.nome === task.assignee ? (
                           <button 
                             onClick={() => toggleTask(task)}
@@ -394,7 +443,7 @@ export const ColaboracaoView = () => {
                           className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
                           <Icons.MessageSquare className="w-4 h-4" />
-                          {task.comentarios?.length || 0} {(task.comentarios?.length === 1) ? 'Comentário' : 'Comentários'}
+                          {task.comentarios?.filter(c => !c.isCiente).length || 0} {(task.comentarios?.filter(c => !c.isCiente).length === 1) ? 'Comentário' : 'Comentários'}
                         </button>
                       )}
 
@@ -414,8 +463,8 @@ export const ColaboracaoView = () => {
                     {expandedComments[task.id] && (
                       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
                         {/* List of comments */}
-                        <div className="space-y-3">
-                          {(task.comentarios || []).map((c, i) => (
+                        <div className="space-y-3 mt-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                          {(task.comentarios || []).filter(c => !c.isCiente).map((c, i) => (
                             <div key={c.id || i} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 text-sm">
                               <div className="flex justify-between items-center mb-1">
                                 <span className="font-bold text-slate-700 dark:text-slate-300">{c.autor}</span>
@@ -424,7 +473,7 @@ export const ColaboracaoView = () => {
                               <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{c.texto}</p>
                             </div>
                           ))}
-                          {(!task.comentarios || task.comentarios.length === 0) && (
+                          {(!task.comentarios || task.comentarios.filter(c => !c.isCiente).length === 0) && (
                             <p className="text-sm text-slate-500 text-center italic">Nenhum comentário ainda.</p>
                           )}
                         </div>
@@ -505,7 +554,7 @@ export const ColaboracaoView = () => {
                   <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400 font-bold">
                     {u.nome.charAt(0).toUpperCase()}
                   </div>
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900"></div>
+                  <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${u.isOnline ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`} title={u.isOnline ? 'Online' : 'Offline'}></div>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{u.nome}</span>

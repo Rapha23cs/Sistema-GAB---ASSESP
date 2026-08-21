@@ -10,6 +10,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'chave-secreta-padrao-segura-123';
 
 const router = express.Router();
 
+const onlineUsers = new Map();
+
+router.post('/ping', (req, res) => {
+  const { email } = req.body;
+  if (email) {
+    onlineUsers.set(email.toLowerCase(), Date.now());
+  }
+  res.json({ ok: true });
+});
+
 router.post('/register', async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
@@ -136,14 +146,20 @@ router.get('/users', async (req, res) => {
     await sheet.loadHeaderRow();
     const rows = await sheet.getRows();
 
-    const users = rows.map(r => ({
-      id: r.get('ID'),
-      nome: r.get('Nome'),
-      email: r.get('Email'),
-      status: r.get('Status'),
-      role: r.get('Role'),
-      dataCadastro: r.get('DataCadastro')
-    }));
+    const now = Date.now();
+    const users = rows.map(r => {
+      const email = r.get('Email');
+      const lastSeen = onlineUsers.get(email ? email.toLowerCase() : '') || 0;
+      return {
+        id: r.get('ID'),
+        nome: r.get('Nome'),
+        email,
+        status: r.get('Status'),
+        role: r.get('Role'),
+        dataCadastro: r.get('DataCadastro'),
+        isOnline: (now - lastSeen) < 60000 // 60 seconds threshold
+      };
+    });
 
     res.json(users);
   } catch (error) {

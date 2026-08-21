@@ -31,7 +31,12 @@ export const NotificationBell = ({ setActiveTab }) => {
           apiFetch(`${API_URL}/api/contratos`),
           apiFetch(`${API_URL}/api/tarefas?t=${Date.now()}`),
           apiFetch(`${API_URL}/api/financeiro?t=${Date.now()}`),
-          apiFetch(`${API_URL}/api/licitacoes?t=${Date.now()}`)
+          apiFetch(`${API_URL}/api/licitacoes?t=${Date.now()}`),
+          user?.email ? apiFetch(`${API_URL}/api/auth/ping`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+          }).catch(e => console.error("Erro no ping:", e)) : Promise.resolve()
         ]);
         
         const eqs = await eqRes.json();
