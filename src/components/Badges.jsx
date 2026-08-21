@@ -30,17 +30,21 @@ export const StatusBadge = ({ status }) => {
     'em_andamento': 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50',
     'concluido': 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50',
     'pendente': 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
+    'pendente_(tratativa)': 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
     'aguardando_manutencao': 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
     'aguardando': 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
+    'aguardando_(servico)': 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
     'atrasado': 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
   };
   
   const labels = { 
     'em_andamento': 'EM ANDAMENTO', 
     'concluido': 'CONCLUÍDO', 
-    'pendente': 'PENDENTE', 
+    'pendente': 'PENDENTE',
+    'pendente_(tratativa)': 'PENDENTE (TRATATIVA)', 
     'aguardando_manutencao': 'AGUARDANDO', 
     'aguardando': 'AGUARDANDO',
+    'aguardando_(servico)': 'AGUARDANDO (SERVIÇO)',
     'atrasado': 'ATRASADO' 
   };
   

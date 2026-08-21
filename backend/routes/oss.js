@@ -120,9 +120,9 @@ router.post('/', async (req, res) => {
         for (const item of items) {
           if (item.tipo_servico && item.tipo_servico.toLowerCase() === 'corretiva') {
             if (item.status === 'CONCLUIDO' || item.status === 'CONCLUÍDO') {
-              await updateEquipmentStatus(doc, item.categoria, item.numero_serie, 'FUNCIONANDO');
-            } else if (item.status === 'PENDENTE') {
-              await updateEquipmentStatus(doc, item.categoria, item.numero_serie, 'FUNCIONANDO COM PENDÊNCIA');
+              await updateEquipmentStatus(doc, item.categoria, item.numero_serie, 'OPERANTE');
+            } else if (!item.status || !item.status.includes('PENDENTE')) {
+              await updateEquipmentStatus(doc, item.categoria, item.numero_serie, 'INOPERANTE');
             }
           }
         }
@@ -205,9 +205,9 @@ router.put('/:id', async (req, res) => {
 
         if (tipoServico.toLowerCase() === 'corretiva') {
           if (statusFinal === 'CONCLUIDO' || statusFinal === 'CONCLUÍDO') {
-            await updateEquipmentStatus(doc, data.categoria, numeroSerie, 'FUNCIONANDO');
-          } else if (statusFinal === 'PENDENTE') {
-            await updateEquipmentStatus(doc, data.categoria, numeroSerie, 'FUNCIONANDO COM PENDÊNCIA');
+            await updateEquipmentStatus(doc, data.categoria, numeroSerie, 'OPERANTE');
+          } else if (!statusFinal || !statusFinal.includes('PENDENTE')) {
+            await updateEquipmentStatus(doc, data.categoria, numeroSerie, 'INOPERANTE');
           }
         }
       } catch (e) {

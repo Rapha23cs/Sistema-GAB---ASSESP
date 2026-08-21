@@ -196,11 +196,11 @@ export default function App() {
 
             <div className="flex items-center gap-6">
               <GlobalSearch setActiveTab={(tab) => {
-                const path = tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const path = tab === 'Ordens de Serviço' ? 'ordens' : tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 navigate(`/${path}`);
               }} />
               <NotificationBell setActiveTab={(tab) => {
-                const path = tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const path = tab === 'Ordens de Serviço' ? 'ordens' : tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 navigate(`/${path}`);
               }} />
             </div>

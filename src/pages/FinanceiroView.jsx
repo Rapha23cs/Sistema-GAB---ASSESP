@@ -237,8 +237,8 @@ export const FinanceiroView = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Buscar objeto, sei, nf, ob..."
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-64 md:w-72 h-10 transition-all focus:w-80"
+                placeholder="Busca Avançada (Contrato, Objeto, SEI, NF, OB)"
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-72 md:w-96 h-10 transition-all focus:w-[400px]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -266,9 +266,9 @@ export const FinanceiroView = () => {
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                 <th className="px-6 py-4 font-medium w-10"></th>
-                <th className="px-6 py-4 font-medium">Contrato / Mês</th>
+                <th className="px-6 py-4 font-medium">Contrato</th>
                 <th className="px-6 py-4 font-medium">Objeto</th>
-                <th className="px-6 py-4 font-medium">Nota Fiscal / SEI</th>
+                <th className="px-6 py-4 font-medium">Ordem Bancária / SEI</th>
                 <th className="px-6 py-4 font-medium">Valor NF</th>
                 <th className="px-6 py-4 font-medium">Status NF</th>
                 <th className="px-6 py-4 font-medium w-24">Ações</th>
@@ -294,7 +294,6 @@ export const FinanceiroView = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.contrato || '-'}</span>
-                          {item.mes && <span className="text-xs text-slate-500 dark:text-slate-400">Mês: {item.mes}</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-xs truncate" title={item.objeto}>
@@ -302,7 +301,7 @@ export const FinanceiroView = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">NF: {item.nota_fiscal || '-'}</span>
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">OB: {item.ordem_bancaria || '-'}</span>
                           {item.sei && <span className="text-xs text-slate-500 dark:text-slate-400">SEI: {item.sei}</span>}
                         </div>
                       </td>
@@ -335,13 +334,18 @@ export const FinanceiroView = () => {
                         <td colSpan="7" className="px-14 py-6 border-b border-slate-100 dark:border-slate-800">
                           <div className="flex flex-wrap items-center justify-between gap-6 bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
                             <div className="flex flex-col items-center flex-1">
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Mês Ref.</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.mes || '-'}</p>
+                            </div>
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                            <div className="flex flex-col items-center flex-1">
                               <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Fonte de Custeio</p>
                               <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.fonte_custeio || '-'}</p>
                             </div>
                             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
                             <div className="flex flex-col items-center flex-1">
-                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ordem Bancária (OB)</p>
-                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.ordem_bancaria || '-'}</p>
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nota Fiscal (NF)</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.nota_fiscal || '-'}</p>
                             </div>
                             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
                             <div className="flex flex-col items-center flex-1">

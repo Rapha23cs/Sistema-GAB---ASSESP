@@ -43,6 +43,19 @@ export const EditOSModal = ({ os, onSave, onCancel }) => {
     }));
   };
 
+  const handleOsNumberBlur = (e) => {
+    let val = e.target.value.trim();
+    if (!val) return;
+    const parts = val.split('/');
+    if (parts.length === 2) {
+      const [num, year] = parts;
+      if (num.length > 0 && num.length < 3 && !isNaN(num)) {
+        const padded = num.padStart(3, '0');
+        setFormData(prev => ({ ...prev, ordem_servico: `${padded}/${year}` }));
+      }
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
@@ -76,9 +89,10 @@ export const EditOSModal = ({ os, onSave, onCancel }) => {
                   name="ordem_servico" 
                   value={formData.ordem_servico} 
                   onChange={handleChange} 
+                  onBlur={handleOsNumberBlur}
                   type="text" 
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-slate-800 dark:text-slate-200" 
-                  placeholder="Ex: OS-123/2026" 
+                  placeholder="Ex: 123/2026" 
                 />
               </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icons } from './Icons';
 import { apiFetch, API_URL } from '../config';
 
@@ -7,10 +8,18 @@ import { getTimestamp, daysUntil } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 export const NotificationBell = ({ setActiveTab }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dismissedAlerts, setDismissedAlerts] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`dismissedAlerts_${user?.nome || 'default'}`)) || [];
+    } catch {
+      return [];
+    }
+  });
   const prevAlertsStrRef = useRef(null);
 
   useEffect(() => {
@@ -71,52 +80,50 @@ export const NotificationBell = ({ setActiveTab }) => {
 
         if (Array.isArray(tarefas) && user) {
           const pending = tarefas.filter(t => !t.completed && t.assignee === user.nome);
-          if (pending.length > 0) {
+          pending.forEach(t => {
             newAlerts.push({
-              id: 'tar_geral',
-              title: 'Tarefas Pendentes',
-              desc: `Há ${pending.length} tarefa(s) pendente(s) aguardando sua ação.`,
+              id: `tar_pend_${t.rowNumber || Math.random()}`,
+              title: 'Tarefa Pendente',
+              desc: t.text || 'Você tem uma tarefa aguardando sua ação.',
               icon: Icons.CheckSquare,
               color: 'text-purple-500',
               bg: 'bg-purple-50 dark:bg-purple-900/30',
-              tab: 'Colaboração'
+              tab: 'Colaboração',
+              taskId: t.id || t.rowNumber
             });
-          }
+          });
 
           const avisos = tarefas.filter(t => t.assignee === 'Todos');
-          if (avisos.length > 0) {
+          avisos.forEach(t => {
             newAlerts.push({
-              id: 'avisos',
-              title: 'Avisos Gerais no Mural',
-              desc: `Há ${avisos.length} aviso(s) importante(s) no fórum para toda a equipe.`,
+              id: `aviso_${t.rowNumber || Math.random()}`,
+              title: 'Aviso no Mural',
+              desc: t.text || 'Novo aviso importante no fórum.',
               icon: Icons.MessageSquare,
               color: 'text-emerald-500',
               bg: 'bg-emerald-50 dark:bg-emerald-900/30',
-              tab: 'Colaboração'
+              tab: 'Colaboração',
+              taskId: t.id || t.rowNumber
             });
-          }
+          });
 
-          let newCommentsCount = 0;
           tarefas.forEach(t => {
             if (!t.completed && t.comentarios && t.comentarios.length > 0) {
               const lastComment = t.comentarios[t.comentarios.length - 1];
               if (lastComment.autor !== user.nome && (t.author === user.nome || t.assignee === user.nome)) {
-                newCommentsCount++;
+                newAlerts.push({
+                  id: `tar_comment_${t.rowNumber || Math.random()}`,
+                  title: 'Novo Comentário',
+                  desc: `Em: ${t.text}`,
+                  icon: Icons.MessageSquare,
+                  color: 'text-blue-500',
+                  bg: 'bg-blue-50 dark:bg-blue-900/30',
+                  tab: 'Colaboração',
+                  taskId: t.id || t.rowNumber
+                });
               }
             }
           });
-          
-          if (newCommentsCount > 0) {
-            newAlerts.push({
-              id: 'tar_comments',
-              title: 'Novos Comentários nas Tarefas',
-              desc: `Há ${newCommentsCount} tarefa(s) com novos comentários.`,
-              icon: Icons.MessageSquare,
-              color: 'text-blue-500',
-              bg: 'bg-blue-50 dark:bg-blue-900/30',
-              tab: 'Colaboração'
-            });
-          }
         }
         
         if (Array.isArray(financ)) {
@@ -197,7 +204,7 @@ export const NotificationBell = ({ setActiveTab }) => {
         className={`relative transition-colors cursor-pointer p-2 rounded-full ${isOpen ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
       >
         <Icons.Bell />
-        {alerts.length > 0 && (
+        {alerts.filter(a => !dismissedAlerts.includes(a.id)).length > 0 && (
           <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
         )}
       </button>
@@ -208,7 +215,7 @@ export const NotificationBell = ({ setActiveTab }) => {
           <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
             <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
               <h3 className="font-bold text-slate-800 dark:text-slate-100">Notificações</h3>
-              <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">{alerts.length} novas</span>
+              <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">{alerts.filter(a => !dismissedAlerts.includes(a.id)).length} novas</span>
             </div>
             
             <div className="max-h-96 overflow-y-auto custom-scrollbar">
@@ -216,15 +223,23 @@ export const NotificationBell = ({ setActiveTab }) => {
                 <div className="p-8 flex justify-center">
                   <div className="w-6 h-6 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
                 </div>
-              ) : alerts.length > 0 ? (
-                alerts.map(alert => (
+              ) : alerts.filter(a => !dismissedAlerts.includes(a.id)).length > 0 ? (
+                alerts.filter(a => !dismissedAlerts.includes(a.id)).map(alert => (
                   <div 
                     key={alert.id}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setIsOpen(false);
+                      if (alert.taskId) {
+                        sessionStorage.setItem('searchTask', alert.taskId.toString());
+                        window.dispatchEvent(new Event('searchTaskUpdated'));
+                      }
+                      const path = alert.tab === 'Ordens de Serviço' ? 'ordens' : alert.tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                      navigate(`/${path}`);
                       if (setActiveTab) setActiveTab(alert.tab);
                     }}
-                    className="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex gap-4 group"
+                    className="relative p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex gap-4 group pr-10"
                   >
                     <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${alert.bg} ${alert.color}`}>
                       <alert.icon className="w-4 h-4" />
@@ -233,6 +248,19 @@ export const NotificationBell = ({ setActiveTab }) => {
                       <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{alert.title}</h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{alert.desc}</p>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const updated = [...dismissedAlerts, alert.id];
+                        setDismissedAlerts(updated);
+                        localStorage.setItem(`dismissedAlerts_${user?.nome || 'default'}`, JSON.stringify(updated));
+                      }}
+                      className="absolute top-4 right-4 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                      title="Dispensar notificação"
+                    >
+                      <Icons.X className="w-4 h-4" />
+                    </button>
                   </div>
                 ))
               ) : (
@@ -245,7 +273,13 @@ export const NotificationBell = ({ setActiveTab }) => {
             
             <div className="p-2 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700 text-center">
               <button 
-                onClick={() => { setIsOpen(false); setActiveTab('Dashboard'); }}
+                onClick={(e) => { 
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false); 
+                  navigate('/dashboard');
+                  if (setActiveTab) setActiveTab('Dashboard'); 
+                }}
                 className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer"
               >
                 Ver todas no Dashboard

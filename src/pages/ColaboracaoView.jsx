@@ -54,9 +54,9 @@ export const ColaboracaoView = () => {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && tasks.length > 0) {
+    const handleSearchTask = () => {
       const searchTask = sessionStorage.getItem('searchTask');
-      if (searchTask) {
+      if (searchTask && tasks.length > 0) {
         setHighlightedTaskId(searchTask);
         sessionStorage.removeItem('searchTask');
         setTimeout(() => {
@@ -67,7 +67,17 @@ export const ColaboracaoView = () => {
           }
         }, 100);
       }
+    };
+
+    window.addEventListener('searchTaskUpdated', handleSearchTask);
+    
+    if (!isLoading) {
+      handleSearchTask();
     }
+
+    return () => {
+      window.removeEventListener('searchTaskUpdated', handleSearchTask);
+    };
   }, [isLoading, tasks]);
 
   const toggleTask = async (task) => {
@@ -266,11 +276,12 @@ export const ColaboracaoView = () => {
             </p>
           ) : (
             tasks.filter(t => !userFilter || t.assignee === userFilter).map((task) => {
-              const isHighlighted = highlightedTaskId === task.id;
+              const isHighlighted = String(highlightedTaskId) === String(task.id) || String(highlightedTaskId) === String(task.rowNumber);
+              const taskDomId = task.id || task.rowNumber;
               return (
               <div 
-                key={task.id} 
-                id={`task-${task.id}`}
+                key={task.id || task.rowNumber} 
+                id={`task-${taskDomId}`}
                 className={`p-5 rounded-2xl border transition-all duration-500 ${
                   isHighlighted 
                     ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-400 dark:border-blue-500 shadow-md ring-2 ring-blue-500/50 transform scale-[1.02] z-10 relative' 

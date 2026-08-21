@@ -93,12 +93,12 @@ export const OrdersView = () => {
                 return s;
               });
               
-              if (allStatus.every(s => s === 'concluido')) {
+              if (allStatus.every(s => s.includes('conclu') || s === 'ok')) {
                 go.status = 'CONCLUIDO';
-              } else if (allStatus.every(s => s === 'aguardando' || s === '')) {
-                go.status = 'AGUARDANDO';
+              } else if (allStatus.every(s => s.includes('aguardando') || s === '')) {
+                go.status = 'AGUARDANDO (Serviço)';
               } else {
-                go.status = 'PENDENTE';
+                go.status = 'PENDENTE (Tratativa)';
               }
             }
 
@@ -385,15 +385,15 @@ export const OrdersView = () => {
   const getStatus = (os) => {
     const s = norm(os.status);
     if (s.includes('conclu') || s === 'ok') return 'concluido';
-    if (s.includes('aguardando')) return 'aguardando_manutencao';
-    if (s.includes('pendente')) return 'pendente';
+    if (s.includes('aguardando')) return 'aguardando_(servico)';
+    if (s.includes('pendente')) return 'pendente_(tratativa)';
     if (s.includes('andamento')) return 'em_andamento';
     // fallback: tenta nos campos de texto
     const obs = norm([os.tarefa, os.tratativa, os.observacoes_tarefa, os.observacoes_tratativa].filter(Boolean).join(' '));
     if (obs.includes('conclu') || obs.includes('finaliz')) return 'concluido';
-    if (obs.includes('aguardando manutenc')) return 'aguardando_manutencao';
-    if (obs.includes('pendente') || obs.includes('pendenc')) return 'pendente';
-    return 'em_andamento';
+    if (obs.includes('aguardando')) return 'aguardando_(servico)';
+    if (obs.includes('pendente') || obs.includes('pendenc')) return 'pendente_(tratativa)';
+    return 'pendente_(tratativa)';
   };
   const filteredOrders = orders.filter(order => {
     if (filterTypes.length > 0) {
@@ -431,8 +431,8 @@ export const OrdersView = () => {
   });
 
   const concluidas = filteredOrders.filter(o => getStatus(o) === 'concluido').length;
-  const pendentes = filteredOrders.filter(o => getStatus(o) === 'pendente').length;
-  const aguardando = filteredOrders.filter(o => getStatus(o) === 'aguardando_manutencao').length;
+  const pendentes = filteredOrders.filter(o => getStatus(o) === 'pendente_(tratativa)').length;
+  const aguardando = filteredOrders.filter(o => getStatus(o) === 'aguardando_(servico)').length;
 
   return (
     <div className="space-y-8 relative">
@@ -512,6 +512,24 @@ export const OrdersView = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/* Contratos */}
+              <div className="relative" tabIndex={0} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsContractsOpen(false); }}>
+                <button onClick={() => setIsContractsOpen(!isContractsOpen)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[140px] flex justify-between items-center gap-2 cursor-pointer shadow-sm">
+                  <span className="truncate max-w-[130px]">{filterContracts.length > 0 ? `${filterContracts.length} Contrato(s)` : 'Contrato (Todos)'}</span>
+                  <Icons.ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                </button>
+                {isContractsOpen && (
+                  <div className="absolute top-full mt-1 left-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto">
+                    {[...new Set(orders.map(o => o.contrato).filter(Boolean))].sort().map((opt, i) => (
+                      <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white" checked={filterContracts.includes(opt)} onChange={(e) => { if (e.target.checked) setFilterContracts([...filterContracts, opt]); else setFilterContracts(filterContracts.filter(item => item !== opt)); }} />
+                        <span className="truncate" title={opt}>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Tipos */}
               <div className="relative" tabIndex={0} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsTypesOpen(false); }}>
                 <button onClick={() => setIsTypesOpen(!isTypesOpen)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[140px] flex justify-between items-center gap-2 cursor-pointer shadow-sm">
@@ -537,34 +555,15 @@ export const OrdersView = () => {
                   <Icons.ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
                 </button>
                 {isStatusesOpen && (
-                  <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
+                  <div className="absolute top-full mt-1 right-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1">
                     {[
                       { val: 'concluido', label: 'CONCLUÍDO' },
-                      { val: 'pendente', label: 'PENDENTE' },
-                      { val: 'aguardando_manutencao', label: 'AGUARDANDO' },
-                      { val: 'em_andamento', label: 'Em Andamento (S/ Status)' }
+                      { val: 'pendente_(tratativa)', label: 'PENDENTE (Tratativa)' },
+                      { val: 'aguardando_(servico)', label: 'AGUARDANDO (Serviço)' }
                     ].map((opt, i) => (
                       <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
                         <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white" checked={filterStatuses.includes(opt.val)} onChange={(e) => { if (e.target.checked) setFilterStatuses([...filterStatuses, opt.val]); else setFilterStatuses(filterStatuses.filter(item => item !== opt.val)); }} />
                         <span>{opt.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Contratos */}
-              <div className="relative" tabIndex={0} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsContractsOpen(false); }}>
-                <button onClick={() => setIsContractsOpen(!isContractsOpen)} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[140px] flex justify-between items-center gap-2 cursor-pointer shadow-sm">
-                  <span className="truncate max-w-[130px]">{filterContracts.length > 0 ? `${filterContracts.length} Contrato(s)` : 'Contrato (Todos)'}</span>
-                  <Icons.ChevronDown className="w-4 h-4 flex-shrink-0 text-slate-400" />
-                </button>
-                {isContractsOpen && (
-                  <div className="absolute top-full mt-1 right-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto">
-                    {[...new Set(orders.map(o => o.contrato).filter(Boolean))].sort().map((opt, i) => (
-                      <label key={i} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-700 dark:text-slate-300">
-                        <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/50 bg-white" checked={filterContracts.includes(opt)} onChange={(e) => { if (e.target.checked) setFilterContracts([...filterContracts, opt]); else setFilterContracts(filterContracts.filter(item => item !== opt)); }} />
-                        <span className="truncate" title={opt}>{opt}</span>
                       </label>
                     ))}
                   </div>
@@ -605,9 +604,9 @@ export const OrdersView = () => {
                     return (eq.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, '_');
                   }) : [];
                   
-                  const completedCount = equipStatuses.filter(s => s === 'concluido').length;
-                  const waitingCount = equipStatuses.filter(s => s === 'aguardando' || s === '').length;
-                  const pendingCount = equipStatuses.filter(s => s !== 'concluido' && s !== 'aguardando' && s !== '').length;
+                  const completedCount = equipStatuses.filter(s => s.includes('conclu') || s === 'ok').length;
+                  const waitingCount = equipStatuses.filter(s => s.includes('aguardando') || s === '').length;
+                  const pendingCount = equipStatuses.filter(s => !s.includes('conclu') && s !== 'ok' && !s.includes('aguardando') && s !== '').length;
 
                   return (
                   <React.Fragment key={rowId}>

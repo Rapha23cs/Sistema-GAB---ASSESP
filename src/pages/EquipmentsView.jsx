@@ -401,7 +401,7 @@ export const EquipmentsView = () => {
           <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap gap-4 items-center">
             <input 
               type="text" 
-              placeholder="Buscar por equipamento, série, unidade..." 
+              placeholder="Busca Avançada (Unidade, Número de Série)" 
               className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full max-w-md"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
